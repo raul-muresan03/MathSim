@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
+from datetime import datetime
 from .configs.config import MATH_CHAPTERS
+
 
 def get_numbers_from_filename(filename: str):
     match = re.search(r'_quiz_([\d_]+)\.png$', filename)
@@ -8,6 +10,7 @@ def get_numbers_from_filename(filename: str):
         numbers_str = match.group(1).split('_')
         return [int(n) for n in numbers_str if n.isdigit()]
     return []
+
 
 def validate_chapter(chapter_name: str, chapter_path: Path):
     found = set()
@@ -24,7 +27,16 @@ def validate_chapter(chapter_name: str, chapter_path: Path):
     status = f"MISSING: {missing}" if missing else "OK (0 missing)"
     print(f"Chapter '{chapter_name}': {low}-{high} -> {status}")
 
-if __name__ == "__main__":
-    for name, path in MATH_CHAPTERS.items():
-        if path.exists() and name != "unknown_chapter":
-            validate_chapter(name, path)
+    output_path = chapter_path / "missing_grile.txt"
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(f"Chapter: {chapter_name}\n")
+        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Range: {low}–{high}\n")
+        f.write(f"Total found: {len(found)}\n")
+        f.write(f"Total missing: {len(missing)}\n")
+        if missing:
+            f.write(f"Missing IDs: {', '.join(str(m) for m in missing)}\n")
+        else:
+            f.write("Status: Complete (no missing grids)\n")
+
+    return missing
