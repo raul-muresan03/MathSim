@@ -20,7 +20,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useTheme } from "@/components/ThemeProvider";
 import { getStoredUser, clearAuth } from "@/lib/auth";
-import { getUserStats, deleteUser } from "@/lib/api";
+import { getUserStats, deleteAccount } from "@/lib/api";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -68,10 +68,9 @@ export default function Navbar() {
   const isLoggedIn = !!currentUser;
 
   const handleDeleteAccount = async () => {
-    if (!currentUser) return;
     setIsDeleting(true);
     try {
-      await deleteUser(currentUser.username);
+      await deleteAccount();
       clearAuth();
       window.location.href = "/";
     } catch (err) {

@@ -146,6 +146,13 @@ export async function deleteUser(username: string): Promise<{ message: string }>
   });
 }
 
+export async function deleteAccount(): Promise<{ message: string }> {
+  return request("/api/account", {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+}
+
 // AI Chat
 
 export function chatWithAI(username: string, message: string): Promise<Response> {
