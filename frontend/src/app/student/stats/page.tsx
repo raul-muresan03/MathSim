@@ -6,6 +6,7 @@ import { AlertTriangle, TrendingUp, Loader2, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import AIChat from "@/components/AIChat";
 import { API_URL, CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
+import { getStoredUser } from "@/lib/auth";
 
 export default function StudentStatsPage() {
   const router = useRouter();
@@ -15,17 +16,12 @@ export default function StudentStatsPage() {
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (!storedUser) {
+    const user = getStoredUser();
+    if (!user) {
       router.replace("/");
       return;
     }
-    try {
-      const parsed = JSON.parse(storedUser);
-      setCurrentUser(parsed);
-    } catch (err) {
-      router.replace("/");
-    }
+    setCurrentUser(user);
   }, [router]);
 
   useEffect(() => {

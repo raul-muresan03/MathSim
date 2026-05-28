@@ -6,6 +6,7 @@ import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, Ale
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, } from "recharts";
 import DataTable, { Column } from "@/components/DataTable";
 import { API_URL, CHAPTER_LABELS } from "@/lib/constants";
+import { getStoredUser } from "@/lib/auth";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import UserEditModal from "@/components/admin/UserEditModal";
 import ConfirmActionModal from "@/components/admin/ConfirmActionModal";
@@ -23,17 +24,8 @@ export default function AdminDashboard() {
   const [usersLoading, setUsersLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (!storedUser) {
-      router.replace("/");
-      return;
-    }
-    try {
-      const parsed = JSON.parse(storedUser);
-      if (parsed.role !== "admin") {
-        router.replace("/");
-      }
-    } catch (err) {
+    const user = getStoredUser();
+    if (!user || user.role !== "admin") {
       router.replace("/");
     }
   }, [router]);

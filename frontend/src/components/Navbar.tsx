@@ -20,6 +20,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useTheme } from "@/components/ThemeProvider";
 import { API_URL } from "@/lib/constants";
+import { getStoredUser, clearAuth } from "@/lib/auth";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -47,12 +48,11 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setCurrentUser(parsed);
-      } catch (err) { }
+    const user = getStoredUser();
+    if (user) {
+      setCurrentUser(user);
+    } else {
+      setCurrentUser(null);
     }
   }, [pathname]);
 
@@ -185,7 +185,7 @@ export default function Navbar() {
                           <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
                             <button
                               onClick={() => {
-                                localStorage.removeItem("currentUser");
+                                clearAuth();
                                 window.location.href = "/";
                               }}
                               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors"

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_URL } from "@/lib/constants";
+import { setStoredUser } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function RegisterPage() {
       }
 
       const data = await response.json();
-      localStorage.setItem("currentUser", JSON.stringify(data));
+      setStoredUser(data);
 
       if (data.role === "admin") {
         router.push("/admin");

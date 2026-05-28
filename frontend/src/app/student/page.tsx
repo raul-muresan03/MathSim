@@ -7,6 +7,7 @@ import RangeSlider from "@/components/RangeSlider";
 import CustomCheckbox from "@/components/CustomCheckbox";
 import WeightSelect from "@/components/WeightSelect";
 import { API_URL } from "@/lib/constants";
+import { getStoredUser } from "@/lib/auth";
 
 const MATH_CHAPTERS = [
   { key: "algebra", label: "Algebră", color: "blue" },
@@ -35,17 +36,8 @@ export default function StudentDashboard() {
   const [customTimer, setCustomTimer] = useState<string>("60");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (!storedUser) {
-      router.replace("/");
-      return;
-    }
-    try {
-      const parsed = JSON.parse(storedUser);
-      if (parsed.role === "admin") {
-        router.replace("/");
-      }
-    } catch (err) {
+    const user = getStoredUser();
+    if (!user || user.role === "admin") {
       router.replace("/");
     }
   }, [router]);

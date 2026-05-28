@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, AlertTriangle, Clock } from "lucide-react";
 import { API_URL, CHAPTER_LABELS } from "@/lib/constants";
+import { getAuthHeaders } from "@/lib/auth";
 
 const CHAPTER_COLORS: Record<string, string> = {
   algebra: "bg-blue-500",
@@ -138,29 +139,19 @@ export default function QuizPlayerPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const storedUser = localStorage.getItem("currentUser");
-    const username = storedUser ? JSON.parse(storedUser).username : null;
-
-    if (!username) {
-      setError("Sesiune expirată. Te rugăm să te reautentifici.");
-      setIsSubmitting(false);
-      return;
-    }
-
     const payload = {
       session_id: session.session_id,
       answers: Object.entries(answers).map(([grid_id, answer]) => ({
         grid_id,
         answer,
       })),
-      username,
       elapsed,
     };
 
     try {
       const res = await fetch(`${API_URL}/api/simulation/grade`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
 
