@@ -42,18 +42,11 @@ def bbox2json(image_path):
 
     text = pytesseract.image_to_string(thresh, config='--psm 6').strip()
 
-    replacements = {
-        'T': '7', 't': '7', 'I': '1', 'l': '1', '|': '1', 'i': '1',
-        'S': '5', 's': '5', 'O': '0', 'o': '0', 'Q': '0', 'G': '6',
-        'z': '2', 'Z': '2', 'A': '4', 'B': '8', 'g': '9',
-        '&': '8', '?': '7', '>': '7'
-    }
-
     matches = re.findall(r'([A-Za-z\d&\?]*)\s*[\W\_]*\s*([A-Ea-e])', text)
 
     results = {}
     for num_raw, letter in matches:
-        for char, val in replacements.items():
+        for char, val in OCR_REPLACEMENTS.items():
             num_raw = num_raw.replace(char, val)
 
         clean_num = re.sub(r'\D', '', num_raw)

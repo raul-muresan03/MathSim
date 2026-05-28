@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from pathlib import Path
 from .configs.config import *
-from multiprocessing import Pool
 
 def preprocess_image(image_path):
     original = cv2.imread(image_path)
@@ -40,7 +39,3 @@ def process_single_page(page_index):
     original, binary = preprocess_image(image_path)
     contours = find_quiz_contours(binary)
     extract_and_save_quizzes(original, binary, contours, RAW_QUIZZES_DIR, page_index)
-
-if __name__ == "__main__":
-    with Pool() as pool:
-        pool.map(process_single_page, range(7, 149))
