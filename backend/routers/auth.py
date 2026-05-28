@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import User
+from models import User, Simulation
 from schemas import LoginRequest
-from dependencies import verify_password, get_password_hash, create_access_token
+from dependencies import verify_password, get_password_hash, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -43,3 +43,13 @@ async def register(request: LoginRequest, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
     }
+
+
+@router.delete("/account")
+async def delete_own_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    sims = db.query(Simulation).filter(Simulation.user_id == current_user.id).all()
+    for s in sims:
+        db.delete(s)
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Contul a fost șters cu succes."}
