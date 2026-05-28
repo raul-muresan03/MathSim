@@ -93,21 +93,27 @@ async def platform_stats(db: Session = Depends(get_db)):
 
 
 @router.get("/users")
-async def list_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
+async def list_users(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    total = db.query(sql_func.count(User.id)).scalar() or 0
+    users = db.query(User).order_by(User.id).offset(offset).limit(limit).all()
+
     result = []
     for u in users:
-        sims = db.query(Simulation).filter(Simulation.user_id == u.id).all()
-        total_sims = len(sims)
-        total_grile = sum(s.total_grids for s in sims)
-        avg_score = round(sum(s.score for s in sims) / total_sims, 1) if total_sims > 0 else 0
+        sims_query = db.query(
+            sql_func.count(Simulation.id),
+            sql_func.coalesce(sql_func.sum(Simulation.total_grids), 0),
+            sql_func.coalesce(sql_func.avg(Simulation.score), 0),
+        ).filter(Simulation.user_id == u.id).first()
+
+        total_sims, total_grile, avg_score = sims_query
         result.append({
             "name": u.username,
             "simulari": total_sims,
             "grile": total_grile,
-            "media": f"{avg_score}",
+            "media": f"{round(float(avg_score), 1)}",
         })
-    return {"users": result}
+
+    return {"users": result, "total": total, "limit": limit, "offset": offset}
 
 
 @router.get("/users/{username}/stats")
