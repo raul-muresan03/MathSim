@@ -2,10 +2,10 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-COPY frontend/package.json frontend/package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY frontend/ .
+COPY . .
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -21,6 +21,9 @@ ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+RUN addgroup --system app && adduser --system --group app && chown -R app:app /app
+USER app
 
 EXPOSE 3000
 

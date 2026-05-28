@@ -1,8 +1,8 @@
 services:
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
@@ -13,8 +13,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
@@ -25,14 +25,29 @@ services:
       - DATABASE_PATH=/app/data/db/toolgrile.db
       - PROCESSED_DATA_PATH=/app/data/processed
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   ollama:
     image: ollama/ollama
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
 
 volumes:
   ollama_data:
