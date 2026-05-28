@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -16,6 +17,8 @@ router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+
+logger = logging.getLogger("toolgrile.ai")
 
 CHAPTER_LABELS_RO = {
     "algebra": "Algebră",
@@ -99,6 +102,7 @@ async def ai_chat(request: ChatRequest, db: Session = Depends(get_db)):
                         if line:
                             yield line + "\n"
         except Exception as e:
+            logger.exception("Ollama streaming error")
             yield json.dumps({"error": str(e)}) + "\n"
 
     return StreamingResponse(

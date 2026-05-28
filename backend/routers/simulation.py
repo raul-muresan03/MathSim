@@ -1,8 +1,10 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import User
+from models import User, Simulation
 from schemas import SimulationConfig, SimulationResult
 from dependencies import get_current_user
 from services.simulation import create_simulation_session, grade_session
@@ -33,9 +35,6 @@ async def grade_simulation(
         graded = grade_session(db, result.session_id, result.answers)
     except KeyError:
         raise HTTPException(status_code=404, detail="Session not found or expired.")
-
-    from models import Simulation
-    import json
 
     sim = Simulation(
         session_id=result.session_id,
