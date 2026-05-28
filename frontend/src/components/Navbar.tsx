@@ -20,7 +20,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useTheme } from "@/components/ThemeProvider";
 import { getStoredUser, clearAuth } from "@/lib/auth";
-import { getUserStats } from "@/lib/api";
+import { getUserStats, deleteUser } from "@/lib/api";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,6 +30,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ username: string, role: string } | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -65,6 +66,19 @@ export default function Navbar() {
   }, [currentUser, pathname]);
 
   const isLoggedIn = !!currentUser;
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+    setIsDeleting(true);
+    try {
+      await deleteUser(currentUser.username);
+      clearAuth();
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Delete account failed:", err);
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-50 shadow-sm transition-colors duration-300">
@@ -217,14 +231,11 @@ export default function Navbar() {
                               Anulează
                             </button>
                             <button
-                              onClick={() => {
-                                alert("Cerere de ștergere trimisă!");
-                                setIsUserMenuOpen(false);
-                                setIsDeleteConfirmOpen(false);
-                              }}
-                              className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm"
+                              onClick={handleDeleteAccount}
+                              disabled={isDeleting}
+                              className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
                             >
-                              Confirmă
+                              {isDeleting ? "Se șterge..." : "Confirmă"}
                             </button>
                           </div>
                         </div>
