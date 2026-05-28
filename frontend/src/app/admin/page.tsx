@@ -23,6 +23,10 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [userPage, setUserPage] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [userRefreshKey, setUserRefreshKey] = useState(0);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     const user = getStoredUser();
@@ -67,9 +71,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      setUsersLoading(true);
       try {
-        const data = await getUsers();
+        const data = await getUsers(PAGE_SIZE, userPage * PAGE_SIZE);
         setUsers(data.users);
+        setTotalUsers(data.total);
       } catch (err) {
         console.error(err);
       } finally {
@@ -77,7 +83,7 @@ export default function AdminDashboard() {
       }
     };
     fetchUsers();
-  }, []);
+  }, [userPage, userRefreshKey]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -141,7 +147,7 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (name: string) => {
     try {
       await deleteUser(name);
-      setUsers((prev) => prev.filter((u) => u.name !== name));
+      setUserRefreshKey((k) => k + 1);
       setConfirmAction(null);
       setEditingUser(null);
     } catch (err) {
@@ -153,6 +159,7 @@ export default function AdminDashboard() {
   const handlePromoteUser = async (name: string) => {
     try {
       await promoteUser(name);
+      setUserRefreshKey((k) => k + 1);
       alert(`${name} a fost promovat la rol de Administrator!`);
       setConfirmAction(null);
       setEditingUser(null);
@@ -189,7 +196,7 @@ export default function AdminDashboard() {
                     { key: "media", title: "Media", sortable: true },
                   ] as Column<UserData>[]
                 }
-                pageSize={4}
+                pageSize={PAGE_SIZE}
                 renderActions={(row: UserData) => (
                   <div className="flex justify-end gap-1.5">
                     <button
@@ -209,6 +216,29 @@ export default function AdminDashboard() {
                   </div>
                 )}
               />
+            )}
+            {totalUsers > PAGE_SIZE && (
+              <div className="flex items-center justify-between mt-4 px-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                  {userPage * PAGE_SIZE + 1}–{Math.min((userPage + 1) * PAGE_SIZE, totalUsers)} din {totalUsers}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setUserPage((p) => p - 1)}
+                    disabled={userPage === 0}
+                    className="px-3 py-1.5 text-sm font-bold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ← Anterior
+                  </button>
+                  <button
+                    onClick={() => setUserPage((p) => p + 1)}
+                    disabled={(userPage + 1) * PAGE_SIZE >= totalUsers}
+                    className="px-3 py-1.5 text-sm font-bold rounded-lg bg-[#0066ff] text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Următor →
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

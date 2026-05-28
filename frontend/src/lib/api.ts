@@ -128,8 +128,8 @@ export interface UserListItem {
   media: string;
 }
 
-export async function getUsers(): Promise<{ users: UserListItem[] }> {
-  return request<{ users: UserListItem[] }>("/api/users");
+export async function getUsers(limit: number = 50, offset: number = 0): Promise<{ users: UserListItem[]; total: number }> {
+  return request<{ users: UserListItem[]; total: number }>(`/api/users?limit=${limit}&offset=${offset}`);
 }
 
 export async function promoteUser(username: string): Promise<{ message: string }> {
