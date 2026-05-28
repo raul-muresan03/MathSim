@@ -3,6 +3,7 @@ import os
 import random
 import secrets
 import re
+import time
 from pathlib import Path
 from typing import Dict
 
@@ -13,6 +14,9 @@ from models import SessionData
 ROOT_DIR = Path(__file__).parent.parent.parent
 PROCESSED_DIR = Path(os.getenv("PROCESSED_DATA_PATH", str(ROOT_DIR / "data" / "processed")))
 ANSWERS_PATH = PROCESSED_DIR / "final_answers.json"
+
+_cache: dict = {"data": None, "ts": 0}
+_CACHE_TTL = 3600
 
 
 def get_chapter_dirs() -> Dict[str, Path]:
@@ -36,6 +40,9 @@ def _load_answers() -> dict:
 
 
 def _scan_inventory() -> list:
+    if _cache["data"] is not None and time.time() - _cache["ts"] < _CACHE_TTL:
+        return _cache["data"]
+
     answers = _load_answers()
     inventory = []
 
@@ -60,6 +67,8 @@ def _scan_inventory() -> list:
                 "has_all_answers": has_answers,
             })
 
+    _cache["data"] = inventory
+    _cache["ts"] = time.time()
     return inventory
 
 
