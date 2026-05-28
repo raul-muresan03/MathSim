@@ -6,11 +6,13 @@ import re
 from pathlib import Path
 from typing import Dict
 
+from sqlalchemy.orm import Session
+
+from models import SessionData
+
 ROOT_DIR = Path(__file__).parent.parent.parent
 PROCESSED_DIR = Path(os.getenv("PROCESSED_DATA_PATH", str(ROOT_DIR / "data" / "processed")))
 ANSWERS_PATH = PROCESSED_DIR / "final_answers.json"
-
-_active_sessions: Dict[str, list] = {}
 
 
 def get_chapter_dirs() -> Dict[str, Path]:
@@ -61,7 +63,7 @@ def _scan_inventory() -> list:
     return inventory
 
 
-def create_simulation_session(total_quizzes: int, chapter_weights: Dict[str, float]) -> dict:
+def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: Dict[str, float]) -> dict:
     inventory = _scan_inventory()
     if not inventory:
         raise ValueError("No quiz data found on disk.")
@@ -110,7 +112,10 @@ def create_simulation_session(total_quizzes: int, chapter_weights: Dict[str, flo
         collected += len(candidate["ids"])
 
     session_id = f"sim_{secrets.token_hex(8)}"
-    _active_sessions[session_id] = selected
+
+    session_record = SessionData(session_id=session_id, data_json=json.dumps(selected))
+    db.add(session_record)
+    db.commit()
 
     grids = []
     for item in selected:
@@ -128,10 +133,12 @@ def create_simulation_session(total_quizzes: int, chapter_weights: Dict[str, flo
     }
 
 
-def grade_session(session_id: str, submitted_answers: list) -> dict:
-    session = _active_sessions.get(session_id)
-    if not session:
+def grade_session(db: Session, session_id: str, submitted_answers: list) -> dict:
+    session_record = db.query(SessionData).filter(SessionData.session_id == session_id).first()
+    if not session_record:
         raise KeyError("Session not found or expired.")
+
+    session = json.loads(session_record.data_json)
 
     correct_answers = {}
     grid_to_chapter = {}
@@ -160,7 +167,8 @@ def grade_session(session_id: str, submitted_answers: list) -> dict:
 
     score = round((correct / total) * 10, 2) if total > 0 else 0
 
-    del _active_sessions[session_id]
+    db.delete(session_record)
+    db.commit()
 
     return {
         "score": score,
@@ -168,7 +176,3 @@ def grade_session(session_id: str, submitted_answers: list) -> dict:
         "total": total,
         "details": details,
     }
-
-
-def get_session(session_id: str) -> list | None:
-    return _active_sessions.get(session_id)

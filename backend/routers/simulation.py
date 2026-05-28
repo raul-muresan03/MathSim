@@ -11,9 +11,10 @@ router = APIRouter(prefix="/api/simulation", tags=["simulation"])
 
 
 @router.post("/generate")
-async def generate_simulation(config: SimulationConfig):
+async def generate_simulation(config: SimulationConfig, db: Session = Depends(get_db)):
     try:
         result = create_simulation_session(
+            db=db,
             total_quizzes=config.total_quizzes,
             chapter_weights={ch: cfg.weight for ch, cfg in config.chapters.items()},
         )
@@ -29,7 +30,7 @@ async def grade_simulation(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        graded = grade_session(result.session_id, result.answers)
+        graded = grade_session(db, result.session_id, result.answers)
     except KeyError:
         raise HTTPException(status_code=404, detail="Session not found or expired.")
 

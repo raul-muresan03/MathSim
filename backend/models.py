@@ -27,3 +27,11 @@ class Simulation(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="simulations")
+
+
+class SessionData(Base):
+    __tablename__ = "session_data"
+
+    session_id = Column(String, primary_key=True)
+    data_json = Column(String, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
