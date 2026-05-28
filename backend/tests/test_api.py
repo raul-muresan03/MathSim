@@ -109,4 +109,42 @@ class TestAdminEndpoints:
 
 class TestGradeFlow:
     def test_full_grade_flow(self, client, auth_headers):
-        pass
+        import json
+        from models import SessionData
+
+        db_session = SessionData(
+            session_id="flow_test",
+            data_json=json.dumps([{
+                "chapter": "algebra",
+                "filename": "test.png",
+                "ids": ["1", "2"],
+                "answers": {"1": "A", "2": "B"},
+                "has_all_answers": True,
+            }])
+        )
+        from database import SessionLocal as SL
+        db = SL()
+        db.add(db_session)
+        db.commit()
+        db.close()
+
+        response = client.post("/api/simulation/grade", json={
+            "session_id": "flow_test",
+            "answers": [
+                {"grid_id": "1", "answer": "A"},
+                {"grid_id": "2", "answer": "B"},
+            ],
+            "elapsed": 300,
+        }, headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["score"] == 10.0
+        assert data["correct"] == 2
+        assert data["total"] == 2
+
+        stats = client.get("/api/users/testuser/stats", headers=auth_headers)
+        assert stats.status_code == 200
+        s = stats.json()
+        assert s["total_simulations"] == 1
+        assert s["total_grids"] == 2
+        assert s["total_correct"] == 2
