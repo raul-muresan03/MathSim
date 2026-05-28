@@ -2,10 +2,12 @@ import cv2
 import pytesseract
 import re
 import json
+import logging
 from pathlib import Path
 import numpy as np
-from multiprocessing import Pool
 from .configs.config import *
+
+logger = logging.getLogger(__name__)
 
 def extract_answer_bboxes_from_page(image_path, out_path, page_num):
     img = cv2.imread(str(image_path))
@@ -33,7 +35,9 @@ def extract_answer_bboxes_from_page(image_path, out_path, page_num):
 
 def bbox2json(image_path):
     ROI = cv2.imread(str(image_path))
-    if ROI is None: return {}
+    if ROI is None:
+        logger.warning("Failed to read image: %s", image_path)
+        return {}
 
     ROI = cv2.copyMakeBorder(ROI, 30, 30, 30, 30, cv2.BORDER_CONSTANT, value=[255, 255, 255])
     gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
@@ -65,13 +69,8 @@ def process_answer_page(page_num):
         return {}
 
     extract_answer_bboxes_from_page(page_img, ANSWER_BBOXES, page_num)
-    page_ranges = {
-        153: (1, 180),
-        154: (181, 444),
-        155: (445, 708),
-        156: (709, 959)
-    }
-    min_n, max_n = page_ranges.get(page_num, (1, 959))
+
+    min_n, max_n = ANSWERS_PAGE_RANGES.get(page_num, (1, 959))
 
     page_results = {}
     for box_file in sorted(ANSWER_BBOXES.glob(f"page_{page_num:03d}_bbox_*.png")):

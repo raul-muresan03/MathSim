@@ -35,6 +35,13 @@ CHAPTER_PAGES = {
 
 ANSWERS_PAGES = (153, 156)
 
+ANSWERS_PAGE_RANGES = {
+    153: (1, 180),
+    154: (181, 444),
+    155: (445, 708),
+    156: (709, 959),
+}
+
 def get_chapter_by_page(page_num):
     for chapter, (start, end) in CHAPTER_PAGES.items():
         if start <= page_num <= end:
