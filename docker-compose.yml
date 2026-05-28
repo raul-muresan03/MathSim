@@ -25,6 +25,7 @@ services:
       - CORS_ORIGINS=http://localhost:3000
       - OLLAMA_URL=http://ollama:11434/api/chat
       - OLLAMA_MODEL=llama3.2:1b
+      - SECRET_KEY=secret_key
     depends_on:
       - ollama
     restart: unless-stopped

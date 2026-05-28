@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from database import engine, get_db, Base
 from models import User, Simulation
+from dependencies import verify_password, get_password_hash, create_access_token, get_current_user
 
 ROOT_DIR = Path(__file__).parent.parent
 PROCESSED_DIR = Path(os.getenv("PROCESSED_DATA_PATH", str(ROOT_DIR / "data" / "processed")))
@@ -110,9 +111,15 @@ class ChatRequest(BaseModel):
 @app.post("/api/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == request.username).first()
-    if not user or user.password != request.password:
+    if not user or not verify_password(request.password, user.password):
         raise HTTPException(status_code=401, detail="Username sau parolă incorectă.")
-    return {"role": user.role, "username": user.username}
+    access_token = create_access_token(data={"sub": user.username, "role": user.role})
+    return {
+        "role": user.role,
+        "username": user.username,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
 @app.post("/api/register")
 async def register(request: LoginRequest, db: Session = Depends(get_db)):
@@ -121,11 +128,19 @@ async def register(request: LoginRequest, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == request.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Acest username există deja.")
-    new_user = User(username=request.username, password=request.password, role="student")
+    hashed_password = get_password_hash(request.password)
+    new_user = User(username=request.username, password=hashed_password, role="student")
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return {"message": "Cont creat cu succes!", "role": new_user.role, "username": new_user.username}
+    access_token = create_access_token(data={"sub": new_user.username, "role": new_user.role})
+    return {
+        "message": "Cont creat cu succes!",
+        "role": new_user.role,
+        "username": new_user.username,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
 _active_sessions: Dict[str, list] = {}
 
