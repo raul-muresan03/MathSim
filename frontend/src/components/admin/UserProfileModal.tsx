@@ -1,6 +1,7 @@
 import { X, Loader2, TrendingUp, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
+import type { UserStatsResponse } from "@/lib/api";
 
 interface UserProfileModalProps {
   selectedUser: string;
@@ -8,7 +9,7 @@ interface UserProfileModalProps {
   profileTimeframe: number | null;
   setProfileTimeframe: (val: number | null) => void;
   profileLoading: boolean;
-  userProfile: any;
+  userProfile: UserStatsResponse | null;
 }
 
 export default function UserProfileModal({
@@ -142,9 +143,9 @@ export default function UserProfileModal({
                           backgroundColor: "var(--background)",
                           color: "var(--foreground)"
                         }}
-                        formatter={(value: any) => [`${value}/10`, "Notă"]}
-                        labelFormatter={(label: any) => {
-                          const item = userProfile.trend.find((t: any) => t.sim === label);
+                        formatter={(value) => [`${value}/10`, "Notă"]}
+                        labelFormatter={(label) => {
+                          const item = userProfile.trend.find((t) => t.sim === label);
                           return item ? `${label} (${item.date})` : label;
                         }}
                       />
@@ -159,7 +160,7 @@ export default function UserProfileModal({
               <div className="bg-slate-50 dark:bg-slate-800 p-5 rounded-xl">
                 <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Acuratețe per capitol</h4>
                 <div className="space-y-3">
-                  {userProfile.chapter_breakdown.map((ch: any) => (
+                  {userProfile.chapter_breakdown.map((ch) => (
                     <div key={ch.chapter}>
                       <div className="flex justify-between text-xs font-bold mb-1">
                         <span className="text-slate-600 dark:text-slate-400">

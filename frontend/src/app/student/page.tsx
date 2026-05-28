@@ -116,15 +116,12 @@ export default function StudentDashboard() {
       });
 
       const actualTimer = timerOption === -1 ? parseInt(customTimer) || 0 : timerOption;
-      const sessionData: any = data;
-      if (actualTimer > 0) {
-        sessionData.timer = actualTimer;
-      }
-
+      const sessionData = { ...data, timer: actualTimer > 0 ? actualTimer : undefined };
       localStorage.setItem("toolgrile_session", JSON.stringify(sessionData));
       router.push(`/student/quiz`);
-    } catch (err: any) {
-      setError(err.message || "Nu s-a putut contacta serverul.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(message || "Nu s-a putut contacta serverul.");
     } finally {
       setIsLoading(false);
     }

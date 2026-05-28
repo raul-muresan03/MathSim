@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import DataTable, { Column } from "@/components/DataTable";
 import { CHAPTER_LABELS } from "@/lib/constants";
 import { getUsers, getAdminStats, getUserStats, deleteUser, promoteUser } from "@/lib/api";
+import type { UserStatsResponse } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters } from "@/hooks/useChapters";
 import UserProfileModal from "@/components/admin/UserProfileModal";
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
   } | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserStatsResponse | null>(null);
   const [profileTimeframe, setProfileTimeframe] = useState<number | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 

@@ -118,9 +118,9 @@ export default function StudentStatsPage() {
                       <YAxis domain={[0, 10]} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
                       <Tooltip
                         contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", backgroundColor: "var(--background)", color: "var(--foreground)" }}
-                        formatter={(value: any) => [`${value}/10`, "Notă"]}
-                        labelFormatter={(label: any) => {
-                          const item = userProfile.trend.find((t: any) => t.sim === label);
+                        formatter={(value) => [`${value}/10`, "Notă"]}
+                        labelFormatter={(label) => {
+                          const item = userProfile.trend.find((t) => t.sim === label);
                           return item ? `${label} (${item.date})` : label;
                         }}
                       />
@@ -135,7 +135,7 @@ export default function StudentStatsPage() {
               <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6">Acuratețe per capitol</h3>
                 <div className="space-y-5">
-                  {userProfile.chapter_breakdown.map((ch: any) => (
+                  {userProfile.chapter_breakdown.map((ch) => (
                     <div key={ch.chapter}>
                       <div className="flex justify-between text-sm font-bold mb-2">
                         <span className="text-slate-700 dark:text-slate-300">{CHAPTER_LABELS[ch.chapter] || ch.chapter}</span>

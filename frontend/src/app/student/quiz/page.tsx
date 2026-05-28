@@ -131,17 +131,18 @@ export default function QuizPlayerPage() {
     setError(null);
 
     try {
-      const results: any = await gradeSimulation(
+      const graded = await gradeSimulation(
         session.session_id,
         Object.entries(answers).map(([grid_id, answer]) => ({ grid_id, answer })),
         elapsed,
       );
-      results.elapsed = elapsed;
+      const results = { ...graded, elapsed };
       localStorage.setItem("toolgrile_results", JSON.stringify(results));
       localStorage.removeItem("toolgrile_session");
       router.push("/student/results");
-    } catch (err: any) {
-      setError(err.message || "Nu s-a putut contacta serverul.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(message || "Nu s-a putut contacta serverul.");
     } finally {
       setIsSubmitting(false);
     }

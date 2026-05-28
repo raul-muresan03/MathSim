@@ -69,8 +69,9 @@ export default function AuthForm({ mode }: { mode: AuthMode }) {
       } else {
         router.push("/student");
       }
-    } catch (err: any) {
-      setErrors({ form: err.message || "Eroare de conexiune la server." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setErrors({ form: message || "Eroare de conexiune la server." });
       setIsLoading(false);
     }
   };
