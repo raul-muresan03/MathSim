@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import numpy as np
 from multiprocessing import Pool
-from configs.config import *
+from .configs.config import *
 
 def extract_answer_bboxes_from_page(image_path, out_path, page_num):
     img = cv2.imread(str(image_path))

@@ -1,5 +1,5 @@
 import fitz
-from configs.config import RAW_PDF_PATH, PAGES_DIR, DPI
+from .configs.config import RAW_PDF_PATH, PAGES_DIR, DPI
 
 def convert_pdf_to_images():
     if not RAW_PDF_PATH.exists():

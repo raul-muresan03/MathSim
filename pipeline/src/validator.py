@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from configs.config import MATH_CHAPTERS
+from .configs.config import MATH_CHAPTERS
 
 def get_numbers_from_filename(filename: str):
     match = re.search(r'_quiz_([\d_]+)\.png$', filename)

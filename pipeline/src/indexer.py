@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from multiprocessing import Pool
 from collections import defaultdict, Counter
-from configs.config import *
+from .configs.config import *
 
 def extract_circle_ROIs(image_path):
     original = cv2.imread(image_path)

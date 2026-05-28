@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from pathlib import Path
-from configs.config import *
+from .configs.config import *
 from multiprocessing import Pool
 
 def preprocess_image(image_path):
