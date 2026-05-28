@@ -18,13 +18,13 @@ class Simulation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String, unique=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     total_grids = Column(Integer, nullable=False)
     correct = Column(Integer, nullable=False)
     score = Column(Float, nullable=False)
     elapsed_seconds = Column(Integer, default=0)
     details_json = Column(String, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="simulations")
 
