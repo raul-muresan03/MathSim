@@ -20,7 +20,8 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useTheme } from "@/components/ThemeProvider";
 import { getStoredUser, clearAuth } from "@/lib/auth";
-import { getUserStats, deleteAccount } from "@/lib/api";
+import { deleteAccount } from "@/lib/api";
+import { useUserStats } from "@/hooks/useUserStats";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,7 +33,6 @@ export default function Navbar() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ username: string, role: string } | null>(null);
-  const [userStats, setUserStats] = useState<any>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -57,13 +57,7 @@ export default function Navbar() {
     }
   }, [pathname]);
 
-  useEffect(() => {
-    if (currentUser?.username && pathname !== "/admin") {
-      getUserStats(currentUser.username)
-        .then(data => setUserStats(data))
-        .catch(err => console.error(err));
-    }
-  }, [currentUser, pathname]);
+  const { stats: userStats } = useUserStats(currentUser?.username);
 
   const isLoggedIn = !!currentUser;
 

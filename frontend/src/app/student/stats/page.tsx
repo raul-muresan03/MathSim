@@ -1,53 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { AlertTriangle, TrendingUp, Loader2, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import AIChat from "@/components/AIChat";
 import { CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
-import { getStoredUser } from "@/lib/auth";
-import { getUserStats } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserStats } from "@/hooks/useUserStats";
 
 export default function StudentStatsPage() {
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
+  const user = useAuth();
   const [profileTimeframe, setProfileTimeframe] = useState<number | null>(30);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { stats: userProfile, loading: profileLoading } = useUserStats(user?.username, profileTimeframe ?? undefined);
+
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const user = getStoredUser();
-    if (!user) {
-      router.replace("/");
-      return;
-    }
-    setCurrentUser(user);
-  }, [router]);
+    setMounted(true);
+  }, []);
 
-  useEffect(() => {
-    if (!currentUser?.username) return;
-
-    let isMounted = true;
-    const fetchProfile = async () => {
-      setProfileLoading(true);
-      try {
-        const data = await getUserStats(currentUser.username, profileTimeframe ?? undefined);
-        if (isMounted) {
-          setUserProfile(data);
-        }
-      } catch (err) {
-        console.error("Error fetching profile stats:", err);
-        if (isMounted) setUserProfile(null);
-      } finally {
-        if (isMounted) setProfileLoading(false);
-      }
-    };
-    fetchProfile();
-    return () => { isMounted = false; };
-  }, [currentUser, profileTimeframe]);
-
-  if (!currentUser) return null;
+  if (!mounted) return null;
 
   return (
     <div className="flex-1 w-full bg-slate-50 dark:bg-slate-950 min-h-full transition-colors duration-300">
@@ -193,7 +165,7 @@ export default function StudentStatsPage() {
         )}
       </div>
 
-      <AIChat username={currentUser?.username} />
+      <AIChat username={user?.username} />
     </div>
   );
 }

@@ -6,8 +6,9 @@ import { Calculator, Loader2 } from "lucide-react";
 import RangeSlider from "@/components/RangeSlider";
 import CustomCheckbox from "@/components/CustomCheckbox";
 import WeightSelect from "@/components/WeightSelect";
-import { getStoredUser } from "@/lib/auth";
-import { getChapters, generateSimulation } from "@/lib/api";
+import { generateSimulation } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useChapters } from "@/hooks/useChapters";
 
 const MATH_CHAPTERS = [
   { key: "algebra", label: "Algebră", color: "blue" },
@@ -27,6 +28,8 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string; dot:
 
 export default function StudentDashboard() {
   const router = useRouter();
+  const user = useAuth();
+  const { gridsByChapter, loading: chaptersLoading } = useChapters();
   const [numQuizzes, setNumQuizzes] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -34,13 +37,6 @@ export default function StudentDashboard() {
   const [chapterCounts, setChapterCounts] = useState<Record<string, number>>({});
   const [timerOption, setTimerOption] = useState<number>(0);
   const [customTimer, setCustomTimer] = useState<string>("60");
-
-  useEffect(() => {
-    const user = getStoredUser();
-    if (!user || user.role === "admin") {
-      router.replace("/");
-    }
-  }, [router]);
 
   const [selectedChapters, setSelectedChapters] = useState<Record<string, boolean>>(
     MATH_CHAPTERS.reduce((acc, ch) => ({ ...acc, [ch.key]: false }), {}),
@@ -51,22 +47,11 @@ export default function StudentDashboard() {
   );
 
   useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const data = await getChapters();
-        const counts: Record<string, number> = {};
-        Object.entries(data.chapters).forEach(([key, val]) => {
-          counts[key] = val.total_grids;
-        });
-        setChapterCounts(counts);
-      } catch (err: any) {
-        console.error(err);
-      } finally {
-        setIsPageLoading(false);
-      }
-    };
-    fetchChapters();
-  }, []);
+    if (!chaptersLoading) {
+      setChapterCounts(gridsByChapter);
+      setIsPageLoading(false);
+    }
+  }, [gridsByChapter, chaptersLoading]);
 
   const estimations = useMemo(() => {
     const results: { key: string; label: string; color: string; count: number }[] = [];

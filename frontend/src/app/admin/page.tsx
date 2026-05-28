@@ -6,8 +6,9 @@ import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, Ale
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, } from "recharts";
 import DataTable, { Column } from "@/components/DataTable";
 import { CHAPTER_LABELS } from "@/lib/constants";
-import { getStoredUser } from "@/lib/auth";
-import { getUsers, getAdminStats, getChapters, getUserStats, deleteUser, promoteUser } from "@/lib/api";
+import { getUsers, getAdminStats, getUserStats, deleteUser, promoteUser } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useChapters } from "@/hooks/useChapters";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import UserEditModal from "@/components/admin/UserEditModal";
 import ConfirmActionModal from "@/components/admin/ConfirmActionModal";
@@ -21,19 +22,14 @@ interface UserData {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const user = useAuth("admin");
+  const { gridsByChapter, loading: chaptersLoading } = useChapters();
   const [users, setUsers] = useState<UserData[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [userPage, setUserPage] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [userRefreshKey, setUserRefreshKey] = useState(0);
   const PAGE_SIZE = 10;
-
-  useEffect(() => {
-    const user = getStoredUser();
-    if (!user || user.role !== "admin") {
-      router.replace("/");
-    }
-  }, [router]);
   const [mounted, setMounted] = useState(false);
   const [chapterData, setChapterData] = useState<{ capitol: string; grile: number }[]>([]);
   const [totalGrile, setTotalGrile] = useState(0);
@@ -70,6 +66,18 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    if (!chaptersLoading) {
+      const barData = Object.entries(gridsByChapter).map(([key, count]) => ({
+        capitol: CHAPTER_LABELS[key] || key,
+        grile: count,
+      }));
+      barData.sort((a, b) => b.grile - a.grile);
+      setChapterData(barData);
+      setTotalGrile(Object.values(gridsByChapter).reduce((s, c) => s + c, 0));
+    }
+  }, [gridsByChapter, chaptersLoading]);
+
+  useEffect(() => {
     const fetchUsers = async () => {
       setUsersLoading(true);
       try {
@@ -95,26 +103,6 @@ export default function AdminDashboard() {
       }
     };
     fetchStats();
-  }, []);
-
-  useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const data = await getChapters();
-        const barData: { capitol: string; grile: number }[] = [];
-        let sum = 0;
-        Object.entries(data.chapters).forEach(([key, val]: [string, any]) => {
-          barData.push({ capitol: CHAPTER_LABELS[key] || key, grile: val.total_grids });
-          sum += val.total_grids;
-        });
-        barData.sort((a, b) => b.grile - a.grile);
-        setChapterData(barData);
-        setTotalGrile(sum);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchChapters();
   }, []);
 
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
