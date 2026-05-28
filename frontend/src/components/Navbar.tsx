@@ -166,7 +166,7 @@ export default function Navbar() {
                                 </span>
                               </div>
                               <span className="font-extrabold text-purple-600 dark:text-purple-400 text-[15px]">
-                                {userStats?.average_score ? (userStats.average_score * 10).toFixed(0) : "0"}%
+                                {userStats?.avg_score ? (userStats.avg_score * 10).toFixed(0) : "0"}%
                               </span>
                             </div>
                           </div>

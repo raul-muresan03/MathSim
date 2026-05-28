@@ -63,15 +63,6 @@ export default function QuizPlayerPage() {
   }, []);
 
   useEffect(() => {
-    if (session?.timer && !isSubmitting) {
-      const totalSeconds = session.timer * 60;
-      if (elapsed >= totalSeconds) {
-        handleSubmit(true);
-      }
-    }
-  }, [elapsed, session, isSubmitting]);
-
-  useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isSubmitting) return;
       e.preventDefault();
@@ -155,6 +146,15 @@ export default function QuizPlayerPage() {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (session?.timer && !isSubmitting) {
+      const totalSeconds = session.timer * 60;
+      if (elapsed >= totalSeconds) {
+        handleSubmit(true);
+      }
+    }
+  }, [elapsed, session, isSubmitting, handleSubmit]);
 
   return (
     <div className="flex-1 w-full bg-gray-200 dark:bg-slate-950 min-h-full transition-colors duration-300">

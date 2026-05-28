@@ -65,6 +65,7 @@ export default function AIChat({ username }: AIChatProps) {
               return newMessages;
             });
           } catch (e) {
+            console.error("AIChat stream parse error:", e);
           }
         }
       }
