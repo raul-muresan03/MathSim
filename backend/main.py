@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from database import engine, get_db, Base
 from models import User, Simulation
-from dependencies import verify_password, get_password_hash, create_access_token, get_current_user
+from dependencies import verify_password, get_password_hash, create_access_token, get_current_user, require_admin
 
 ROOT_DIR = Path(__file__).parent.parent
 PROCESSED_DIR = Path(os.getenv("PROCESSED_DATA_PATH", str(ROOT_DIR / "data" / "processed")))
@@ -474,7 +474,7 @@ async def user_stats(username: str, days: Optional[int] = None, db: Session = De
     }
 
 @app.put("/api/users/{username}/role")
-async def promote_user(username: str, db: Session = Depends(get_db)):
+async def promote_user(username: str, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -483,7 +483,7 @@ async def promote_user(username: str, db: Session = Depends(get_db)):
     return {"message": f"User {username} promoted to admin."}
 
 @app.delete("/api/users/{username}")
-async def delete_user(username: str, db: Session = Depends(get_db)):
+async def delete_user(username: str, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
