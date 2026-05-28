@@ -2,8 +2,10 @@ import argparse
 import sys
 import shutil
 from pathlib import Path
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from collections import defaultdict
+
+MAX_WORKERS = min(cpu_count(), 8)
 
 from src.pdf2image import convert_pdf_to_images
 from src.segmenter import process_single_page
@@ -15,7 +17,7 @@ from src.configs.config import *
 def run_segmentation():
     print("\n--- [STEP 2] Page Segmentation (7-148) ---")
     pages = range(7, 149)
-    with Pool() as pool:
+    with Pool(processes=MAX_WORKERS) as pool:
         pool.map(process_single_page, pages)
 
 def run_indexing():
@@ -30,7 +32,7 @@ def run_indexing():
         page_num = img.stem.split("_")[1]
         pages_dict[page_num].append(img)
 
-    with Pool() as pool:
+    with Pool(processes=MAX_WORKERS) as pool:
         pool.map(process_page_group, list(pages_dict.items()))
 
 def run_answers():
@@ -38,7 +40,7 @@ def run_answers():
     start, end = ANSWERS_PAGES
     pages = list(range(start, end + 1))
 
-    with Pool() as pool:
+    with Pool(processes=MAX_WORKERS) as pool:
         results = pool.map(process_answer_page, pages)
 
     final_answers = {}
