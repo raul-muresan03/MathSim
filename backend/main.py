@@ -97,7 +97,6 @@ class StudentAnswer(BaseModel):
 class SimulationResult(BaseModel):
     session_id: str
     answers: List[StudentAnswer]
-    username: Optional[str] = None
     elapsed: Optional[int] = 0
 
 class LoginRequest(BaseModel):
@@ -317,7 +316,7 @@ async def generate_simulation(config: SimulationConfig):
     }
 
 @app.post("/api/simulation/grade")
-async def grade_simulation(result: SimulationResult, db: Session = Depends(get_db)):
+async def grade_simulation(result: SimulationResult, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     session = _active_sessions.get(result.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found or expired.")
@@ -349,16 +348,9 @@ async def grade_simulation(result: SimulationResult, db: Session = Depends(get_d
 
     score = round((correct / total) * 10, 2) if total > 0 else 0
 
-    if not result.username:
-        raise HTTPException(status_code=401, detail="Trebuie să fii autentificat pentru a finaliza simularea.")
-
-    user = db.query(User).filter(User.username == result.username).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="Utilizator invalid.")
-
     sim = Simulation(
         session_id=result.session_id,
-        user_id=user.id,
+        user_id=current_user.id,
         total_grids=total,
         correct=correct,
         score=score,
