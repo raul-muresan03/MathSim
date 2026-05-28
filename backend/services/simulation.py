@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import secrets
 import re
 from pathlib import Path
 from typing import Dict
@@ -108,7 +109,7 @@ def create_simulation_session(total_quizzes: int, chapter_weights: Dict[str, flo
         used_files.add(candidate["filename"])
         collected += len(candidate["ids"])
 
-    session_id = f"sim_{random.randint(100000, 999999)}"
+    session_id = f"sim_{secrets.token_hex(8)}"
     _active_sessions[session_id] = selected
 
     grids = []
