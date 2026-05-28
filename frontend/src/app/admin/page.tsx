@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, AlertTriangle } from "lucide-react";
+import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, AlertTriangle, CheckCircle, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, } from "recharts";
 import DataTable, { Column } from "@/components/DataTable";
 import { CHAPTER_LABELS } from "@/lib/constants";
@@ -30,7 +30,13 @@ export default function AdminDashboard() {
   const [userPage, setUserPage] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [userRefreshKey, setUserRefreshKey] = useState(0);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const PAGE_SIZE = 10;
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
   const [mounted, setMounted] = useState(false);
   const [chapterData, setChapterData] = useState<{ capitol: string; grile: number }[]>([]);
   const [totalGrile, setTotalGrile] = useState(0);
@@ -141,7 +147,7 @@ export default function AdminDashboard() {
       setEditingUser(null);
     } catch (err) {
       console.error(err);
-      alert("Eroare de rețea la ștergerea utilizatorului.");
+      showToast("Eroare la ștergerea utilizatorului.", "error");
     }
   };
 
@@ -149,16 +155,17 @@ export default function AdminDashboard() {
     try {
       await promoteUser(name);
       setUserRefreshKey((k) => k + 1);
-      alert(`${name} a fost promovat la rol de Administrator!`);
+      showToast(`${name} a fost promovat la Administrator!`, "success");
       setConfirmAction(null);
       setEditingUser(null);
     } catch (err) {
       console.error(err);
-      alert("Eroare de rețea la promovare.");
+      showToast("Eroare la promovarea utilizatorului.", "error");
     }
   };
 
   return (
+    <>
     <div className="flex-1 w-full bg-slate-50 dark:bg-slate-950 min-h-full transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 gap-8">
@@ -472,5 +479,19 @@ export default function AdminDashboard() {
         />
       )}
     </div>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border transition-all ${
+        toast.type === "success"
+          ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
+          : "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+      }`}>
+        {toast.type === "success" ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertTriangle className="w-5 h-5 shrink-0" />}
+        <span className="text-sm font-bold">{toast.message}</span>
+        <button onClick={() => setToast(null)} className="shrink-0 opacity-60 hover:opacity-100">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    )}
+    </>
   );
 }
