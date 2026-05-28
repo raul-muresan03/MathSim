@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, AlertTriangle, Clock } from "lucide-react";
 import { API_URL, CHAPTER_LABELS } from "@/lib/constants";
-import { getAuthHeaders } from "@/lib/auth";
+import { gradeSimulation } from "@/lib/api";
 
 const CHAPTER_COLORS: Record<string, string> = {
   algebra: "bg-blue-500",
@@ -139,28 +139,12 @@ export default function QuizPlayerPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const payload = {
-      session_id: session.session_id,
-      answers: Object.entries(answers).map(([grid_id, answer]) => ({
-        grid_id,
-        answer,
-      })),
-      elapsed,
-    };
-
     try {
-      const res = await fetch(`${API_URL}/api/simulation/grade`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Eroare la corectare.");
-      }
-
-      const results = await res.json();
+      const results: any = await gradeSimulation(
+        session.session_id,
+        Object.entries(answers).map(([grid_id, answer]) => ({ grid_id, answer })),
+        elapsed,
+      );
       results.elapsed = elapsed;
       localStorage.setItem("toolgrile_results", JSON.stringify(results));
       localStorage.removeItem("toolgrile_session");

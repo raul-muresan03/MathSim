@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, } from "recharts";
 import DataTable, { Column } from "@/components/DataTable";
-import { API_URL, CHAPTER_LABELS } from "@/lib/constants";
+import { CHAPTER_LABELS } from "@/lib/constants";
 import { getStoredUser } from "@/lib/auth";
+import { getUsers, getAdminStats, getChapters, getUserStats, deleteUser, promoteUser } from "@/lib/api";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import UserEditModal from "@/components/admin/UserEditModal";
 import ConfirmActionModal from "@/components/admin/ConfirmActionModal";
@@ -32,7 +33,20 @@ export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
   const [chapterData, setChapterData] = useState<{ capitol: string; grile: number }[]>([]);
   const [totalGrile, setTotalGrile] = useState(0);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<{
+    total_users: number;
+    total_simulations: number;
+    total_grids_solved: number;
+    total_grids_generated: number;
+    total_study_hours: number;
+    avg_score: number;
+    avg_elapsed_min: number;
+    activity_chart: { zi: string; simulari: number; studenti: number }[];
+    easiest_chapter: string | null;
+    easiest_correct_count: number;
+    hardest_chapter: string | null;
+    hardest_wrong_count: number;
+  }>({
     total_users: 0,
     total_simulations: 0,
     total_grids_solved: 0,
@@ -54,9 +68,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/users`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await getUsers();
         setUsers(data.users);
       } catch (err) {
         console.error(err);
@@ -70,9 +82,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/stats`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await getAdminStats();
         setStats(data);
       } catch (err) {
         console.error(err);
@@ -84,9 +94,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/chapters`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await getChapters();
         const barData: { capitol: string; grile: number }[] = [];
         let sum = 0;
         Object.entries(data.chapters).forEach(([key, val]: [string, any]) => {
@@ -119,12 +127,7 @@ export default function AdminDashboard() {
     const fetchProfile = async () => {
       setProfileLoading(true);
       try {
-        const url = profileTimeframe
-          ? `${API_URL}/api/users/${selectedUser}/stats?days=${profileTimeframe}`
-          : `${API_URL}/api/users/${selectedUser}/stats`;
-        const res = await fetch(url);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await getUserStats(selectedUser, profileTimeframe ?? undefined);
         setUserProfile(data);
       } catch (err) {
         console.error(err);
@@ -137,13 +140,7 @@ export default function AdminDashboard() {
 
   const handleDeleteUser = async (name: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/users/${name}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        alert("Eroare la ștergerea utilizatorului.");
-        return;
-      }
+      await deleteUser(name);
       setUsers((prev) => prev.filter((u) => u.name !== name));
       setConfirmAction(null);
       setEditingUser(null);
@@ -155,13 +152,7 @@ export default function AdminDashboard() {
 
   const handlePromoteUser = async (name: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/users/${name}/role`, {
-        method: "PUT",
-      });
-      if (!res.ok) {
-        alert("Eroare la promovarea utilizatorului.");
-        return;
-      }
+      await promoteUser(name);
       alert(`${name} a fost promovat la rol de Administrator!`);
       setConfirmAction(null);
       setEditingUser(null);

@@ -19,8 +19,8 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useTheme } from "@/components/ThemeProvider";
-import { API_URL } from "@/lib/constants";
 import { getStoredUser, clearAuth } from "@/lib/auth";
+import { getUserStats } from "@/lib/api";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -58,8 +58,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (currentUser?.username && pathname !== "/admin") {
-      fetch(`${API_URL}/api/users/${currentUser.username}/stats`)
-        .then(res => res.json())
+      getUserStats(currentUser.username)
         .then(data => setUserStats(data))
         .catch(err => console.error(err));
     }

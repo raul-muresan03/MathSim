@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Sparkles, Send, Bot, User as UserIcon } from "lucide-react";
-import { API_URL } from "@/lib/constants";
+import { chatWithAI } from "@/lib/api";
 
 interface AIChatProps {
   username?: string;
@@ -26,11 +26,7 @@ export default function AIChat({ username }: AIChatProps) {
     setChatMessages((prev) => [...prev, { role: "user", content: text }]);
     setChatLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/ai/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username, message: text }),
-      });
+      const res = await chatWithAI(username || "unknown", text);
 
       if (!res.ok) throw new Error("AI error");
 

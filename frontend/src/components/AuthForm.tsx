@@ -3,37 +3,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { API_URL } from "@/lib/constants";
+import { login as apiLogin, register as apiRegister } from "@/lib/api";
 import { setStoredUser } from "@/lib/auth";
 
 type AuthMode = "login" | "register";
 
 const AUTH_CONFIG: Record<AuthMode, {
-  endpoint: string;
   subtitle: string;
   loadingText: string;
   buttonText: string;
-  defaultError: string;
   footerText: string;
   footerLinkText: string;
   footerHref: string;
 }> = {
   login: {
-    endpoint: "/api/login",
     subtitle: "Autentifică-te pentru a continua",
     loadingText: "Se autentifică...",
     buttonText: "Autentificare",
-    defaultError: "Username sau parolă incorectă.",
     footerText: "Nu ai cont?",
     footerLinkText: "Creează unul",
     footerHref: "/register",
   },
   register: {
-    endpoint: "/api/register",
     subtitle: "Creează un cont pentru a continua",
     loadingText: "Se creează contul...",
     buttonText: "Înregistrare",
-    defaultError: "Eroare la crearea contului.",
     footerText: "Ai deja cont?",
     footerLinkText: "Autentifică-te",
     footerHref: "/login",
@@ -64,20 +58,10 @@ export default function AuthForm({ mode }: { mode: AuthMode }) {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}${config.endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+      const data = mode === "login"
+        ? await apiLogin(username, password)
+        : await apiRegister(username, password);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        setErrors({ form: errorData.detail || config.defaultError });
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await response.json();
       setStoredUser(data);
 
       if (data.role === "admin") {
@@ -85,8 +69,8 @@ export default function AuthForm({ mode }: { mode: AuthMode }) {
       } else {
         router.push("/student");
       }
-    } catch {
-      setErrors({ form: "Eroare de conexiune la server." });
+    } catch (err: any) {
+      setErrors({ form: err.message || "Eroare de conexiune la server." });
       setIsLoading(false);
     }
   };

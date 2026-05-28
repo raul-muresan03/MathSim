@@ -6,8 +6,8 @@ import { Calculator, Loader2 } from "lucide-react";
 import RangeSlider from "@/components/RangeSlider";
 import CustomCheckbox from "@/components/CustomCheckbox";
 import WeightSelect from "@/components/WeightSelect";
-import { API_URL } from "@/lib/constants";
 import { getStoredUser } from "@/lib/auth";
+import { getChapters, generateSimulation } from "@/lib/api";
 
 const MATH_CHAPTERS = [
   { key: "algebra", label: "Algebră", color: "blue" },
@@ -53,11 +53,9 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/chapters`);
-        if (!res.ok) throw new Error("Nu s-au putut încărca capitolele.");
-        const data = await res.json();
+        const data = await getChapters();
         const counts: Record<string, number> = {};
-        Object.entries(data.chapters).forEach(([key, val]: [string, any]) => {
+        Object.entries(data.chapters).forEach(([key, val]) => {
           counts[key] = val.total_grids;
         });
         setChapterCounts(counts);
@@ -127,28 +125,18 @@ export default function StudentDashboard() {
     });
 
     try {
-      const res = await fetch(`${API_URL}/api/simulation/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          total_quizzes: numQuizzes,
-          chapters: chaptersPayload,
-        }),
+      const data = await generateSimulation({
+        total_quizzes: numQuizzes,
+        chapters: chaptersPayload,
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Eroare la generarea simulării.");
-      }
-
-      const data = await res.json();
-
       const actualTimer = timerOption === -1 ? parseInt(customTimer) || 0 : timerOption;
+      const sessionData: any = data;
       if (actualTimer > 0) {
-        data.timer = actualTimer;
+        sessionData.timer = actualTimer;
       }
 
-      localStorage.setItem("toolgrile_session", JSON.stringify(data));
+      localStorage.setItem("toolgrile_session", JSON.stringify(sessionData));
       router.push(`/student/quiz`);
     } catch (err: any) {
       setError(err.message || "Nu s-a putut contacta serverul.");

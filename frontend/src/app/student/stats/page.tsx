@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, TrendingUp, Loader2, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import AIChat from "@/components/AIChat";
-import { API_URL, CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
+import { CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
 import { getStoredUser } from "@/lib/auth";
+import { getUserStats } from "@/lib/api";
 
 export default function StudentStatsPage() {
   const router = useRouter();
@@ -31,10 +32,7 @@ export default function StudentStatsPage() {
     const fetchProfile = async () => {
       setProfileLoading(true);
       try {
-        const query = profileTimeframe !== null ? `?days=${profileTimeframe}` : "";
-        const res = await fetch(`${API_URL}/api/users/${currentUser.username}/stats${query}`);
-        if (!res.ok) throw new Error("Failed to fetch profile stats");
-        const data = await res.json();
+        const data = await getUserStats(currentUser.username, profileTimeframe ?? undefined);
         if (isMounted) {
           setUserProfile(data);
         }
