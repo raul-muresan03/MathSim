@@ -2,9 +2,21 @@ import cv2
 import pytesseract
 import re
 import shutil
+import logging
 from pathlib import Path
 from collections import defaultdict, Counter
 from .configs.config import *
+
+LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+logger = logging.getLogger("indexer")
+logger.addHandler(logging.FileHandler(LOG_DIR / "errors.log"))
+logger.setLevel(logging.WARNING)
+
+
+def _page_num_from_path(image_path: str) -> str:
+    m = re.search(r"page_(\d+)", str(image_path))
+    return m.group(1) if m else "?"
 
 def extract_circle_ROIs(image_path):
     original = cv2.imread(image_path)
@@ -27,29 +39,34 @@ def extract_circle_ROIs(image_path):
     return [item[1] for item in ROI_list]
 
 def extract_quiz_numbers_with_ocr(image_path):
+    page = _page_num_from_path(image_path)
     ROIs = extract_circle_ROIs(image_path)
     extracted = []
-    for ROI in ROIs:
-        h, w = ROI.shape[:2]
-        margin = 15
-        inner = ROI[margin:h-margin, margin:w-margin]
-        inner = cv2.resize(inner, (300, 300), interpolation=cv2.INTER_CUBIC)
+    for i, ROI in enumerate(ROIs):
+        try:
+            h, w = ROI.shape[:2]
+            margin = 15
+            inner = ROI[margin:h-margin, margin:w-margin]
+            inner = cv2.resize(inner, (300, 300), interpolation=cv2.INTER_CUBIC)
 
-        inner_gray = cv2.cvtColor(inner, cv2.COLOR_BGR2GRAY)
-        _, inner_bin_no_pad = cv2.threshold(inner_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            inner_gray = cv2.cvtColor(inner, cv2.COLOR_BGR2GRAY)
+            _, inner_bin_no_pad = cv2.threshold(inner_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        inner_bin_pad = cv2.copyMakeBorder(inner_bin_no_pad, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=255)
+            inner_bin_pad = cv2.copyMakeBorder(inner_bin_no_pad, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=255)
 
-        ocr_text = pytesseract.image_to_string(inner_bin_pad, config='--psm 8')
+            ocr_text = pytesseract.image_to_string(inner_bin_pad, config='--psm 8')
 
-        for char, num in OCR_REPLACEMENTS.items():
-            ocr_text = ocr_text.replace(char, num)
+            for char, num in OCR_REPLACEMENTS.items():
+                ocr_text = ocr_text.replace(char, num)
 
-        clean_num = re.sub(r'\D', '', ocr_text)
+            clean_num = re.sub(r'\D', '', ocr_text)
 
-        if clean_num:
-            extracted.append(int(clean_num))
-        else:
+            if clean_num:
+                extracted.append(int(clean_num))
+            else:
+                extracted.append(None)
+        except Exception:
+            logger.exception("OCR error: page=%s circle=%d image=%s", page, i, image_path)
             extracted.append(None)
 
     return extracted
