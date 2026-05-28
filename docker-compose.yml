@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
       - "3000:3000"
     depends_on:
@@ -19,13 +19,11 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+    env_file: .env
     environment:
+      - OLLAMA_URL=http://ollama:11434/api/chat
       - DATABASE_PATH=/app/data/db/toolgrile.db
       - PROCESSED_DATA_PATH=/app/data/processed
-      - CORS_ORIGINS=http://localhost:3000
-      - OLLAMA_URL=http://ollama:11434/api/chat
-      - OLLAMA_MODEL=llama3.2:1b
-      - SECRET_KEY=secret_key
     depends_on:
       - ollama
     restart: unless-stopped

@@ -1,5 +1,5 @@
-pymupdf
-opencv-python
-pytesseract
-pillow
-numpy
+pymupdf==1.27.2.2
+opencv-python==4.13.0.92
+pytesseract==0.3.13
+pillow==12.2.0
+numpy==2.4.4
