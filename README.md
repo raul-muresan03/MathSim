@@ -81,10 +81,17 @@ docker exec mathsim-ollama-1 ollama pull llama3.2:1b
 
 ### Local Development
 
+> **Note:** If you move or rename the project directory, recreate the virtual environment:
+> ```bash
+> rm -rf venv && python3 -m venv venv
+> pip install -r backend/requirements.txt -r pipeline/requirements.txt
+> ```
+
 #### Backend
 ```bash
 cd backend
 pip install -r requirements.txt
+cp ../.env.example ../.env
 python main.py
 ```
 
@@ -99,13 +106,21 @@ npm run dev
 ```bash
 cd pipeline
 pip install -r requirements.txt
-python run.py --all
+
+# Full run (clean previous data + all 5 steps)
+python run.py --clean --all
+
+# Or individual steps
+python run.py --step 1    # PDF → Images
+python run.py --step 2    # Segmentation
+python run.py --step 3    # OCR Indexing
+python run.py --step 4    # Answer Extraction
+python run.py --step 5    # Validation
 ```
 
 #### Running Tests
 ```bash
-cd backend
-pytest tests/ -v
+pytest backend/tests/ -v
 ```
 
 ## Results Summary

@@ -10,6 +10,7 @@ from .configs.config import *
 logger = logging.getLogger(__name__)
 
 def extract_answer_bboxes_from_page(image_path, out_path, page_num):
+    out_path.mkdir(parents=True, exist_ok=True)
     img = cv2.imread(str(image_path))
     if img is None:
         return

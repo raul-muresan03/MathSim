@@ -6,6 +6,7 @@ def convert_pdf_to_images():
         print(f"Error: PDF file not found at {RAW_PDF_PATH}")
         return
 
+    PAGES_DIR.mkdir(parents=True, exist_ok=True)
     print(f"Opening PDF: {RAW_PDF_PATH}")
     doc = fitz.open(RAW_PDF_PATH)
     
