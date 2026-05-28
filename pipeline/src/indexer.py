@@ -3,7 +3,6 @@ import pytesseract
 import re
 import shutil
 from pathlib import Path
-from multiprocessing import Pool
 from collections import defaultdict, Counter
 from .configs.config import *
 
@@ -43,12 +42,7 @@ def extract_quiz_numbers_with_ocr(image_path):
 
         ocr_text = pytesseract.image_to_string(inner_bin_pad, config='--psm 8')
 
-        replacements = {
-            'l': '1', 'L': '1', 'I': '1', '|': '1', 'i': '1',
-            'A': '4', 'S': '5', 's': '5', 'O': '0', 'o': '0', 'Q': '0',
-            'B': '8', 'Z': '2', 'z': '2'
-        }
-        for char, num in replacements.items():
+        for char, num in OCR_REPLACEMENTS.items():
             ocr_text = ocr_text.replace(char, num)
 
         clean_num = re.sub(r'\D', '', ocr_text)
@@ -113,24 +107,3 @@ def process_page_group(item):
         rename_and_move_image(str(image_path), quiz_numbers, destination)
 
     return len(images_for_page)
-
-if __name__ == "__main__":
-    images = list(RAW_QUIZZES_DIR.glob("*.png"))
-    total = len(images)
-    print(f"Grouping and processing {total} quizzes by page...")
-
-    pages_dict = defaultdict(list)
-    for img in images:
-        page_num = img.stem.split("_")[1]
-        pages_dict[page_num].append(img)
-
-    with Pool() as pool:
-        pool.map(process_page_group, list(pages_dict.items()))
-
-    indexed = sum(len(list(path.glob("*.png"))) for path in MATH_CHAPTERS.values() if path.name != "unknown")
-    unknowns = sum(len(list(path.glob("unknown_quizzes/*.png"))) for path in MATH_CHAPTERS.values() if path.name != "unknown")
-
-    print(f"\nDone!")
-    print(f"Total processed: {total}")
-    print(f"Successfully indexed: {indexed}")
-    print(f"Unknowns: {unknowns}")

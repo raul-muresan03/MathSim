@@ -112,6 +112,8 @@ def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: 
         collected += len(candidate["ids"])
 
     session_id = f"sim_{secrets.token_hex(8)}"
+    while db.query(SessionData).filter(SessionData.session_id == session_id).first():
+        session_id = f"sim_{secrets.token_hex(8)}"
 
     session_record = SessionData(session_id=session_id, data_json=json.dumps(selected))
     db.add(session_record)

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).parent.parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parents[3]
 DATA_DIR = ROOT_DIR / "data"
 
 RAW_DIR = DATA_DIR / "raw"
@@ -35,6 +35,13 @@ CHAPTER_PAGES = {
 
 ANSWERS_PAGES = (153, 156)
 
+ANSWERS_PAGE_RANGES = {
+    153: (1, 180),
+    154: (181, 444),
+    155: (445, 708),
+    156: (709, 959),
+}
+
 def get_chapter_by_page(page_num):
     for chapter, (start, end) in CHAPTER_PAGES.items():
         if start <= page_num <= end:
@@ -50,7 +57,6 @@ for path in all_dirs:
     path.mkdir(parents=True, exist_ok=True)
 
 BINARY_THRESHOLD = 240
-HPP_THRESHOLD = 3000
 
 MIN_CIRCLE_SIZE = 50
 MAX_CIRCLE_SIZE = 150
@@ -59,3 +65,11 @@ ASPECT_RATIO_MAX = 1.15
 MAX_CIRCLE_X = 350
 
 MIN_CONTOUR_AREA = 10000
+
+OCR_REPLACEMENTS = {
+    'l': '1', 'L': '1', 'I': '1', '|': '1', 'i': '1',
+    'A': '4', 'S': '5', 's': '5', 'O': '0', 'o': '0', 'Q': '0',
+    'B': '8', 'Z': '2', 'z': '2',
+    'T': '7', 't': '7', 'G': '6', 'g': '9',
+    '&': '8', '?': '7', '>': '7',
+}

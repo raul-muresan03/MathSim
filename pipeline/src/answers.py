@@ -2,10 +2,12 @@ import cv2
 import pytesseract
 import re
 import json
+import logging
 from pathlib import Path
 import numpy as np
-from multiprocessing import Pool
 from .configs.config import *
+
+logger = logging.getLogger(__name__)
 
 def extract_answer_bboxes_from_page(image_path, out_path, page_num):
     img = cv2.imread(str(image_path))
@@ -33,7 +35,9 @@ def extract_answer_bboxes_from_page(image_path, out_path, page_num):
 
 def bbox2json(image_path):
     ROI = cv2.imread(str(image_path))
-    if ROI is None: return {}
+    if ROI is None:
+        logger.warning("Failed to read image: %s", image_path)
+        return {}
 
     ROI = cv2.copyMakeBorder(ROI, 30, 30, 30, 30, cv2.BORDER_CONSTANT, value=[255, 255, 255])
     gray = cv2.cvtColor(ROI, cv2.COLOR_BGR2GRAY)
@@ -42,18 +46,11 @@ def bbox2json(image_path):
 
     text = pytesseract.image_to_string(thresh, config='--psm 6').strip()
 
-    replacements = {
-        'T': '7', 't': '7', 'I': '1', 'l': '1', '|': '1', 'i': '1',
-        'S': '5', 's': '5', 'O': '0', 'o': '0', 'Q': '0', 'G': '6',
-        'z': '2', 'Z': '2', 'A': '4', 'B': '8', 'g': '9',
-        '&': '8', '?': '7', '>': '7'
-    }
-
     matches = re.findall(r'([A-Za-z\d&\?]*)\s*[\W\_]*\s*([A-Ea-e])', text)
 
     results = {}
     for num_raw, letter in matches:
-        for char, val in replacements.items():
+        for char, val in OCR_REPLACEMENTS.items():
             num_raw = num_raw.replace(char, val)
 
         clean_num = re.sub(r'\D', '', num_raw)
@@ -72,13 +69,8 @@ def process_answer_page(page_num):
         return {}
 
     extract_answer_bboxes_from_page(page_img, ANSWER_BBOXES, page_num)
-    page_ranges = {
-        153: (1, 180),
-        154: (181, 444),
-        155: (445, 708),
-        156: (709, 959)
-    }
-    min_n, max_n = page_ranges.get(page_num, (1, 959))
+
+    min_n, max_n = ANSWERS_PAGE_RANGES.get(page_num, (1, 959))
 
     page_results = {}
     for box_file in sorted(ANSWER_BBOXES.glob(f"page_{page_num:03d}_bbox_*.png")):
