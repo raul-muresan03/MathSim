@@ -117,7 +117,7 @@ export default function StudentDashboard() {
 
       const actualTimer = timerOption === -1 ? parseInt(customTimer) || 0 : timerOption;
       const sessionData = { ...data, timer: actualTimer > 0 ? actualTimer : undefined };
-      localStorage.setItem("toolgrile_session", JSON.stringify(sessionData));
+      localStorage.setItem("mathsim_session", JSON.stringify(sessionData));
       router.push(`/student/quiz`);
     } catch (err) {
       const message = err instanceof Error ? err.message : undefined;

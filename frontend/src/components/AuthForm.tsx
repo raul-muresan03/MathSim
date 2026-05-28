@@ -80,7 +80,7 @@ export default function AuthForm({ mode }: { mode: AuthMode }) {
     <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       <div className="max-w-[420px] w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl dark:shadow-slate-950/50 overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col p-8 sm:p-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">ToolGrile</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">MathSim</h1>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             {config.subtitle}
           </p>

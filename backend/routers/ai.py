@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/ai", tags=["ai"])
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 
-logger = logging.getLogger("toolgrile.ai")
+logger = logging.getLogger("mathsim.ai")
 
 CHAPTER_LABELS_RO = {
     "algebra": "Algebră",
@@ -75,7 +75,7 @@ async def ai_chat(request: ChatRequest, db: Session = Depends(get_db)):
         )
 
     system_prompt = (
-        "Ești un asistent educațional pentru platforma ToolGrile, o platformă de pregătire pentru examenul de admitere de matematică la facultatea de Automatică și Calculatoare la Universitatea Tehnica din Cluj-Napoca."
+        "Ești un asistent educațional pentru platforma MathSim, o platformă de pregătire pentru examenul de admitere de matematică la facultatea de Automatică și Calculatoare la Universitatea Tehnica din Cluj-Napoca."
         "Răspunzi DOAR în limba română. Ești concis, prietenos și motivant."
         "Poți sugera planuri de studiu, capitole de exersat, și simulări personalizate."
         "Când sugerezi simulări, specifică numărul de grile și capitolele (algebra, analiza, geometrie, trigonometrie, admitere)."

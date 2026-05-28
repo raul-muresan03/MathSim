@@ -25,7 +25,7 @@ export default function ResultsPage() {
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem("toolgrile_results");
+    const raw = localStorage.getItem("mathsim_results");
     if (!raw) {
       router.push("/student");
       return;
@@ -173,7 +173,7 @@ export default function ResultsPage() {
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => {
-              localStorage.removeItem("toolgrile_results");
+              localStorage.removeItem("mathsim_results");
               router.push("/student");
             }}
             className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold text-white bg-[#0066ff] hover:bg-blue-700 transition-colors shadow-lg"
@@ -183,7 +183,7 @@ export default function ResultsPage() {
           </button>
           <button
             onClick={() => {
-              localStorage.removeItem("toolgrile_results");
+              localStorage.removeItem("mathsim_results");
               router.push("/");
             }}
             className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"

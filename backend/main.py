@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="ToolGrile API",
+    title="MathSim API",
     version="1.0.0",
     lifespan=lifespan,
 )

@@ -73,7 +73,7 @@ def clean_data():
         path.mkdir(parents=True, exist_ok=True)
 
 def main():
-    parser = argparse.ArgumentParser(description="ToolGrile")
+    parser = argparse.ArgumentParser(description="MathSim")
 
     parser.add_argument("--step", type=int, choices=[1, 2, 3, 4, 5],
                         help="Run a Single Pipeline Step (1: PDF2Img, 2: Segment, 3: Index, 4: Answers, 5: Validate)")
@@ -90,7 +90,7 @@ def main():
         clean_data()
 
     if args.all:
-        print("=== Starting Full ToolGrile Pipeline ===")
+        print("=== Starting Full MathSim Pipeline ===")
         convert_pdf_to_images()
         run_segmentation()
         run_indexing()

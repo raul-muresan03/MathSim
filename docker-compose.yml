@@ -22,7 +22,7 @@ services:
     env_file: .env
     environment:
       - OLLAMA_URL=http://ollama:11434/api/chat
-      - DATABASE_PATH=/app/data/db/toolgrile.db
+      - DATABASE_PATH=/app/data/db/mathsim.db
       - PROCESSED_DATA_PATH=/app/data/processed
     depends_on:
       ollama:

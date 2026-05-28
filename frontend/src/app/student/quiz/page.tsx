@@ -40,7 +40,7 @@ export default function QuizPlayerPage() {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const raw = localStorage.getItem("toolgrile_session");
+    const raw = localStorage.getItem("mathsim_session");
     if (!raw) {
       router.push("/student");
       return;
@@ -52,7 +52,7 @@ export default function QuizPlayerPage() {
       }
       setSession(data);
     } catch {
-      localStorage.removeItem("toolgrile_session");
+      localStorage.removeItem("mathsim_session");
       router.push("/student");
     }
   }, [router]);
@@ -137,8 +137,8 @@ export default function QuizPlayerPage() {
         elapsed,
       );
       const results = { ...graded, elapsed };
-      localStorage.setItem("toolgrile_results", JSON.stringify(results));
-      localStorage.removeItem("toolgrile_session");
+      localStorage.setItem("mathsim_results", JSON.stringify(results));
+      localStorage.removeItem("mathsim_session");
       router.push("/student/results");
     } catch (err) {
       const message = err instanceof Error ? err.message : undefined;

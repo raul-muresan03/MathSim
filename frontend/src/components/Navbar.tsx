@@ -79,7 +79,7 @@ export default function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link href="/" className="flex-shrink-0 flex items-center gap-2">
-              <span className="font-bold text-xl text-blue-600 dark:text-blue-400">ToolGrile</span>
+              <span className="font-bold text-xl text-blue-600 dark:text-blue-400">MathSim</span>
             </Link>
           </div>
           <div className="hidden sm:flex sm:items-center sm:gap-3">
@@ -131,7 +131,7 @@ export default function Navbar() {
                             <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
                               {currentUser?.role === "admin"
                                 ? "Administrator"
-                                : "Student ToolGrile"}
+                                : "Student MathSim"}
                             </p>
                           </div>
                           <div className="px-5 py-4 space-y-4">

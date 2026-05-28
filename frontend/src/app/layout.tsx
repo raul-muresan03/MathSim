@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ToolGrile",
+  title: "MathSim",
   description: "Math Simulation Platform",
 };
 
