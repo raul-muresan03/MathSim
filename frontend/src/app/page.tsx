@@ -75,9 +75,6 @@ export default function Home() {
       <section className="w-full bg-slate-50 dark:bg-slate-950 py-20 flex justify-center px-6 border-t border-slate-100 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-5xl w-full">
           <div className="text-center mb-16">
-            <span className="inline-block text-xs font-extrabold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-4 py-1.5 rounded-full mb-4">
-              Computer Vision Pipeline
-            </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mb-4">
               De la PDF scanat la test interactiv
             </h2>
