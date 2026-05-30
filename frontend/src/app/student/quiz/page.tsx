@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, AlertTriangle, Clock } from "lucide-react";
 import { API_URL, CHAPTER_LABELS } from "@/lib/constants";
@@ -93,21 +93,10 @@ export default function QuizPlayerPage() {
     };
   }, [isSubmitting]);
 
-  if (!session) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-slate-950">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  const grid = session.grids[currentIndex];
-  const totalImages = session.grids.length;
+  const totalImages = session?.grids?.length ?? 0;
 
   const answeredCount = Object.keys(answers).length;
-  const totalQuestions = session.grids.reduce((s, g) => s + g.grid_ids.length, 0);
-
-  const allCurrentAnswered = grid.grid_ids.every((id) => answers[id]);
+  const totalQuestions = session?.grids?.reduce((s, g) => s + g.grid_ids.length, 0) ?? 0;
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -119,7 +108,8 @@ export default function QuizPlayerPage() {
     setAnswers((prev) => ({ ...prev, [gridId]: answer }));
   };
 
-  const handleSubmit = async (force: boolean = false) => {
+  const handleSubmit = useCallback(async (force: boolean = false) => {
+    if (!session) return;
     if (!force && answeredCount < totalQuestions) {
       const confirmEnd = window.confirm(
         `Mai ai ${totalQuestions - answeredCount} întrebări fără răspuns. Ești sigur că vrei să finalizezi simularea?`
@@ -146,7 +136,7 @@ export default function QuizPlayerPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [session, answers, elapsed, router, answeredCount, totalQuestions]);
 
   useEffect(() => {
     if (session?.timer && !isSubmitting) {
@@ -156,6 +146,16 @@ export default function QuizPlayerPage() {
       }
     }
   }, [elapsed, session, isSubmitting, handleSubmit]);
+
+  if (!session) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-slate-950">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  const grid = session.grids[currentIndex];
 
   return (
     <div className="flex-1 w-full bg-gray-200 dark:bg-slate-950 min-h-full transition-colors duration-300">
