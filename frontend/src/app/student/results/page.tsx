@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, CheckCircle2, XCircle, Clock, RotateCcw, Home, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, CheckCircle2, XCircle, Clock, Eye, X, RotateCcw, Home, ChevronDown, ChevronUp } from "lucide-react";
+import { API_URL } from "@/lib/constants";
 
 interface ResultDetail {
   grid_id: string;
+  chapter: string;
+  filename: string;
   submitted: string;
   expected: string;
   is_correct: boolean;
@@ -23,6 +26,7 @@ export default function ResultsPage() {
   const router = useRouter();
   const [results, setResults] = useState<ResultsData | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem("mathsim_results");
@@ -36,6 +40,15 @@ export default function ResultsPage() {
       router.push("/student");
     }
   }, [router]);
+
+  useEffect(() => {
+    if (previewImage) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [previewImage]);
 
   if (!results) {
     return (
@@ -159,9 +172,20 @@ export default function ResultsPage() {
                       {d.submitted || "—"}
                     </span>
                     {!d.is_correct && (
-                      <span className="text-slate-400 dark:text-slate-500 font-medium">
-                        → {d.expected}
-                      </span>
+                      <>
+                        <span className="text-slate-400 dark:text-slate-500 font-medium">
+                          → {d.expected}
+                        </span>
+                        {d.chapter && d.filename && (
+                          <button
+                            onClick={() => setPreviewImage(`${API_URL}/api/grid/${d.chapter}/${d.filename}`)}
+                            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            title="Vezi grila"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -194,6 +218,26 @@ export default function ResultsPage() {
         </div>
 
       </div>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={previewImage}
+            alt="Previzualizare grilă"
+            className="max-w-full max-h-[90vh] rounded-xl shadow-2xl bg-white"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

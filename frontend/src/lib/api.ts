@@ -74,7 +74,7 @@ export async function gradeSimulation(sessionId: string, answers: { grid_id: str
   score: number;
   correct: number;
   total: number;
-  details: { grid_id: string; chapter: string; submitted: string; expected: string; is_correct: boolean }[];
+  details: { grid_id: string; chapter: string; filename: string; submitted: string; expected: string; is_correct: boolean }[];
 }> {
   return request("/api/simulation/grade", {
     method: "POST",

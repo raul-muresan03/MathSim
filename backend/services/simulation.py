@@ -153,10 +153,12 @@ def grade_session(db: Session, session_id: str, submitted_answers: list) -> dict
 
     correct_answers = {}
     grid_to_chapter = {}
+    grid_to_filename = {}
     for item in session:
         for gid, ans in item["answers"].items():
             correct_answers[str(gid)] = ans
             grid_to_chapter[str(gid)] = item["chapter"]
+            grid_to_filename[str(gid)] = item["filename"]
 
     total = len(correct_answers)
     correct = 0
@@ -171,6 +173,7 @@ def grade_session(db: Session, session_id: str, submitted_answers: list) -> dict
         details.append({
             "grid_id": sub.grid_id,
             "chapter": chapter,
+            "filename": grid_to_filename.get(str(sub.grid_id), ""),
             "submitted": sub.answer,
             "expected": expected,
             "is_correct": is_correct,
