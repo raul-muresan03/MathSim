@@ -43,10 +43,14 @@ class TestPublicEndpoints:
         assert response.status_code == 200
         assert "chapters" in response.json()
 
-    def test_stats_empty(self, client):
-        response = client.get("/api/stats")
+    def test_stats_empty(self, client, admin_headers):
+        response = client.get("/api/stats", headers=admin_headers)
         assert response.status_code == 200
-        assert response.json()["total_users"] == 0
+        assert response.json()["total_users"] == 1
+
+    def test_stats_requires_auth(self, client):
+        response = client.get("/api/stats")
+        assert response.status_code == 401
 
 
 class TestProtectedEndpoints:
@@ -96,14 +100,25 @@ class TestAdminEndpoints:
         response = client.delete("/api/users/testuser", headers=auth_headers)
         assert response.status_code == 403
 
-    def test_users_list(self, client):
-        response = client.get("/api/users")
+    def test_users_list(self, client, admin_headers):
+        response = client.get("/api/users", headers=admin_headers)
         assert response.status_code == 200
         assert "users" in response.json()
         assert "total" in response.json()
 
-    def test_user_stats_empty(self, client):
-        response = client.get("/api/users/nonexistent/stats")
+    def test_users_list_requires_auth(self, client):
+        response = client.get("/api/users")
+        assert response.status_code == 401
+
+    def test_user_stats_owner_or_admin(self, client, auth_headers):
+        client.post("/api/register", json={"username": "other", "password": "pw"})
+        forbidden = client.get("/api/users/other/stats", headers=auth_headers)
+        assert forbidden.status_code == 403
+        own = client.get("/api/users/testuser/stats", headers=auth_headers)
+        assert own.status_code == 200
+
+    def test_user_stats_empty(self, client, admin_headers):
+        response = client.get("/api/users/nonexistent/stats", headers=admin_headers)
         assert response.status_code == 404
 
 

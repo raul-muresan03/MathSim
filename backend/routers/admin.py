@@ -9,13 +9,13 @@ from sqlalchemy import func as sql_func
 
 from database import get_db
 from models import User, Simulation
-from dependencies import require_admin
+from dependencies import get_current_user, require_admin
 
 router = APIRouter(prefix="/api", tags=["admin"])
 
 
 @router.get("/stats")
-async def platform_stats(db: Session = Depends(get_db)):
+async def platform_stats(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     total_users = db.query(sql_func.count(User.id)).scalar() or 0
     total_simulations = db.query(sql_func.count(Simulation.id)).scalar() or 0
     total_grids_solved = db.query(sql_func.sum(Simulation.correct)).scalar() or 0
@@ -93,7 +93,7 @@ async def platform_stats(db: Session = Depends(get_db)):
 
 
 @router.get("/users")
-async def list_users(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+async def list_users(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     total = db.query(sql_func.count(User.id)).scalar() or 0
     users = db.query(User).order_by(User.id).offset(offset).limit(limit).all()
 
@@ -117,7 +117,9 @@ async def list_users(limit: int = 50, offset: int = 0, db: Session = Depends(get
 
 
 @router.get("/users/{username}/stats")
-async def user_stats(username: str, days: Optional[int] = None, db: Session = Depends(get_db)):
+async def user_stats(username: str, days: Optional[int] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin" and current_user.username != username:
+        raise HTTPException(status_code=403, detail="Acces interzis.")
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")

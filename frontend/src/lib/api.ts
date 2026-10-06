@@ -99,7 +99,9 @@ export interface UserStatsResponse {
 
 export async function getUserStats(username: string, days?: number): Promise<UserStatsResponse> {
   const query = days !== undefined ? `?days=${days}` : "";
-  return request<UserStatsResponse>(`/api/users/${username}/stats${query}`);
+  return request<UserStatsResponse>(`/api/users/${username}/stats${query}`, {
+    headers: getAuthHeaders(),
+  });
 }
 
 export interface AdminStatsResponse {
@@ -118,7 +120,9 @@ export interface AdminStatsResponse {
 }
 
 export async function getAdminStats(): Promise<AdminStatsResponse> {
-  return request<AdminStatsResponse>("/api/stats");
+  return request<AdminStatsResponse>("/api/stats", {
+    headers: getAuthHeaders(),
+  });
 }
 
 export interface UserListItem {
@@ -129,7 +133,9 @@ export interface UserListItem {
 }
 
 export async function getUsers(limit: number = 50, offset: number = 0): Promise<{ users: UserListItem[]; total: number }> {
-  return request<{ users: UserListItem[]; total: number }>(`/api/users?limit=${limit}&offset=${offset}`);
+  return request<{ users: UserListItem[]; total: number }>(`/api/users?limit=${limit}&offset=${offset}`, {
+    headers: getAuthHeaders(),
+  });
 }
 
 export async function promoteUser(username: string): Promise<{ message: string }> {
