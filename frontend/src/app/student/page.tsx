@@ -3,9 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Calculator, Loader2 } from "lucide-react";
-import RangeSlider from "@/components/RangeSlider";
-import CustomCheckbox from "@/components/CustomCheckbox";
-import WeightSelect from "@/components/WeightSelect";
 import { generateSimulation } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters } from "@/hooks/useChapters";
@@ -147,32 +144,43 @@ export default function StudentDashboard() {
               </h2>
               <div className="space-y-4">
                 {MATH_CHAPTERS.map((ch) => (
-                  <CustomCheckbox
-                    key={ch.key}
-                    label={
-                      <span>
+                  <div key={ch.key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between py-1 gap-2">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={selectedChapters[ch.key] || false}
+                        onChange={(e) =>
+                          setSelectedChapters({ ...selectedChapters, [ch.key]: e.target.checked })
+                        }
+                        className="mt-0.5 w-6 h-6 accent-[#0066ff]"
+                      />
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-[16px] leading-tight pt-0.5 max-w-[260px]">
                         {ch.label}{" "}
                         <span className="text-[10px] text-slate-400 font-normal">
                           ({chapterCounts[ch.key] || 0} disponibile)
                         </span>
                       </span>
-                    }
-                    checked={selectedChapters[ch.key] || false}
-                    onChange={(val) =>
-                      setSelectedChapters({ ...selectedChapters, [ch.key]: val })
-                    }
-                    renderWeights={
-                      selectedChapters[ch.key] && (
-                        <WeightSelect
-                          label="Pondere"
-                          value={chapterWeights[ch.key]}
-                          onChange={(val) =>
-                            setChapterWeights({ ...chapterWeights, [ch.key]: val })
-                          }
-                        />
-                      )
-                    }
-                  />
+                    </label>
+                    {selectedChapters[ch.key] && (
+                      <div className="ml-9 sm:ml-0 flex items-center gap-2">
+                        <label className="flex flex-col gap-1 items-center">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold leading-none uppercase tracking-wide">
+                            Pondere
+                          </span>
+                          <select
+                            value={chapterWeights[ch.key]}
+                            onChange={(e) =>
+                              setChapterWeights({ ...chapterWeights, [ch.key]: e.target.value })
+                            }
+                          >
+                            <option value="0.5">Scăzută (½ șanse)</option>
+                            <option value="1.0">Standard (1x)</option>
+                            <option value="2.0">Crescută (2x șanse)</option>
+                          </select>
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -182,15 +190,18 @@ export default function StudentDashboard() {
                 Număr Total Grile
               </h3>
               <div className="space-y-4">
-                <RangeSlider
-                  label="Matematică"
-                  min={5}
-                  max={100}
-                  step={5}
-                  value={numQuizzes}
-                  onChange={(val) => setNumQuizzes(val)}
-                  unit="grile"
-                />
+                <div>
+                  <span>Matematică</span>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    step={5}
+                    value={numQuizzes}
+                    onChange={(e) => setNumQuizzes(Number(e.target.value))}
+                  />
+                  <span>{numQuizzes} grile</span>
+                </div>
               </div>
 
               <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-4 mt-8 text-center lg:text-left">

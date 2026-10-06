@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, AlertTriangle, CheckCircle, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, } from "recharts";
-import DataTable, { Column } from "@/components/DataTable";
 import { CHAPTER_LABELS } from "@/lib/constants";
 import { getUsers, getAdminStats, getUserStats, deleteUser, promoteUser } from "@/lib/api";
 import type { UserStatsResponse } from "@/lib/api";
@@ -182,36 +181,45 @@ export default function AdminDashboard() {
                 Niciun utilizator încă. Datele vor apărea după prima simulare finalizată.
               </p>
             ) : (
-              <DataTable
-                data={users}
-                columns={
-                  [
-                    { key: "name", title: "Nume", sortable: true },
-                    { key: "simulari", title: "Simulări", sortable: true },
-                    { key: "grile", title: "Grile", sortable: true },
-                    { key: "media", title: "Media", sortable: true },
-                  ] as Column<UserData>[]
-                }
-                pageSize={PAGE_SIZE}
-                renderActions={(row: UserData) => (
-                  <div className="flex justify-end gap-1.5">
-                    <button
-                      onClick={() => { setSelectedUser(row.name); setProfileTimeframe(null); }}
-                      className="bg-[#0066ff] hover:bg-blue-700 transition-colors w-7 h-7 rounded-lg flex items-center justify-center text-white shadow-sm"
-                      title="Statistici"
-                    >
-                      <Eye className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    </button>
-                    <button
-                      onClick={() => setEditingUser(row)}
-                      className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm"
-                      title="Editare"
-                    >
-                      <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    </button>
-                  </div>
-                )}
-              />
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nume</th>
+                    <th>Simulări</th>
+                    <th>Grile</th>
+                    <th>Media</th>
+                    <th>Acțiuni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((row) => (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{row.simulari}</td>
+                      <td>{row.grile}</td>
+                      <td>{row.media}</td>
+                      <td>
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => { setSelectedUser(row.name); setProfileTimeframe(null); }}
+                            className="bg-[#0066ff] hover:bg-blue-700 transition-colors w-7 h-7 rounded-lg flex items-center justify-center text-white shadow-sm"
+                            title="Statistici"
+                          >
+                            <Eye className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          </button>
+                          <button
+                            onClick={() => setEditingUser(row)}
+                            className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm"
+                            title="Editare"
+                          >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
             {totalUsers > PAGE_SIZE && (
               <div className="flex items-center justify-between mt-4 px-1">
