@@ -50,7 +50,11 @@ export interface ChaptersResponse {
 }
 
 export async function getChapters(): Promise<ChaptersResponse> {
-  return request<ChaptersResponse>("/api/chapters");
+  const res = await fetch("/grids/manifest.json");
+  if (!res.ok) {
+    throw new Error(`Request failed (${res.status})`);
+  }
+  return res.json();
 }
 
 export async function generateSimulation(config: {

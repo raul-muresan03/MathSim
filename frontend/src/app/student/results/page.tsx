@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, CheckCircle2, XCircle, Clock, Eye, X, RotateCcw, Home, ChevronDown, ChevronUp } from "lucide-react";
-import { API_URL } from "@/lib/constants";
 
 interface ResultDetail {
   grid_id: string;
@@ -178,7 +177,7 @@ export default function ResultsPage() {
                         </span>
                         {d.chapter && d.filename && (
                           <button
-                            onClick={() => setPreviewImage(`${API_URL}/api/grid/${d.chapter}/${d.filename}`)}
+                            onClick={() => setPreviewImage(`/grids/${d.chapter}/${d.filename}`)}
                             className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                             title="Vezi grila"
                           >

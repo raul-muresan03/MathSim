@@ -42,6 +42,14 @@ GEMINI.md
 *.pdf
 *.docx
 
+# Grid images served by the frontend (CDN)
+!frontend/public/grids/
+!frontend/public/grids/**
+
+# Bundled quiz inventory for the backend (serverless-friendly)
+!backend/data/
+!backend/data/**
+
 Thumbs.db
 Desktop.ini
 .DS_Store

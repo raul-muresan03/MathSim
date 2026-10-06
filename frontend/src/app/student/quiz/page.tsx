@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, AlertTriangle, Clock } from "lucide-react";
-import { API_URL, CHAPTER_LABELS } from "@/lib/constants";
+import { CHAPTER_LABELS } from "@/lib/constants";
 import { gradeSimulation } from "@/lib/api";
 
 const CHAPTER_COLORS: Record<string, string> = {
@@ -219,7 +219,7 @@ export default function QuizPlayerPage() {
 
           <div className="p-4 sm:p-6 flex justify-center bg-slate-50 dark:bg-slate-950/50">
             <img
-              src={`${API_URL}${grid.image_url}`}
+              src={grid.image_url}
               alt={`Grila ${grid.grid_ids.join(", ")}`}
               className="max-w-full h-auto rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
               draggable={false}

@@ -22,7 +22,6 @@ services:
     env_file: .env
     environment:
       - DATABASE_PATH=/app/data/db/mathsim.db
-      - PROCESSED_DATA_PATH=/app/data/processed
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]

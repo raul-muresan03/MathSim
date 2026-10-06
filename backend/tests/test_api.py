@@ -38,11 +38,6 @@ class TestPublicEndpoints:
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
 
-    def test_chapters(self, client):
-        response = client.get("/api/chapters")
-        assert response.status_code == 200
-        assert "chapters" in response.json()
-
     def test_stats_empty(self, client):
         response = client.get("/api/stats")
         assert response.status_code == 200

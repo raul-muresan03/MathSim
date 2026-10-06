@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 _db_file = os.path.join(tempfile.gettempdir(), "mathsim_test.db")
 
 os.environ["DATABASE_PATH"] = _db_file
-os.environ["PROCESSED_DATA_PATH"] = "/nonexistent"
 
 from main import app
 from database import engine, Base, SessionLocal

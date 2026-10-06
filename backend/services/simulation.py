@@ -1,75 +1,26 @@
 import json
-import os
 import random
 import secrets
-import re
-import time
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from sqlalchemy.orm import Session
 
 from models import SessionData
 
-ROOT_DIR = Path(__file__).parent.parent.parent
-PROCESSED_DIR = Path(os.getenv("PROCESSED_DATA_PATH", str(ROOT_DIR / "data" / "processed")))
-ANSWERS_PATH = PROCESSED_DIR / "final_answers.json"
-
-_cache: dict = {"data": None, "ts": 0}
-_CACHE_TTL = 3600
+ROOT_DIR = Path(__file__).parent.parent
+INVENTORY_PATH = ROOT_DIR / "data" / "inventory.json"
 
 
-def get_chapter_dirs() -> Dict[str, Path]:
-    chapters = {}
-    if not PROCESSED_DIR.exists():
-        return chapters
-    for item in PROCESSED_DIR.iterdir():
-        if item.is_dir() and item.name not in ["unknown", "db"]:
-            chapters[item.name] = item
-    return chapters
-
-
-CHAPTER_DIRS = get_chapter_dirs()
-
-
-def _load_answers() -> dict:
-    if not ANSWERS_PATH.exists():
-        return {}
-    with open(ANSWERS_PATH, "r", encoding="utf-8") as f:
+def _load_inventory() -> List[dict]:
+    if not INVENTORY_PATH.exists():
+        return []
+    with open(INVENTORY_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def _scan_inventory() -> list:
-    if _cache["data"] is not None and time.time() - _cache["ts"] < _CACHE_TTL:
-        return _cache["data"]
-
-    answers = _load_answers()
-    inventory = []
-
-    for chapter_name, chapter_path in CHAPTER_DIRS.items():
-        if not chapter_path.exists():
-            continue
-
-        for file in sorted(chapter_path.glob("*.png")):
-            match = re.search(r'quiz_([\d_]+)\.png', file.name)
-            if not match:
-                continue
-
-            ids_str = match.group(1).split('_')
-            grid_ids = [s for s in ids_str if s]
-            has_answers = all(str(gid) in answers for gid in grid_ids)
-
-            inventory.append({
-                "chapter": chapter_name,
-                "filename": file.name,
-                "ids": grid_ids,
-                "answers": {gid: answers.get(str(gid), None) for gid in grid_ids},
-                "has_all_answers": has_answers,
-            })
-
-    _cache["data"] = inventory
-    _cache["ts"] = time.time()
-    return inventory
+    return _load_inventory()
 
 
 def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: Dict[str, float]) -> dict:
@@ -134,7 +85,7 @@ def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: 
             "chapter": item["chapter"],
             "filename": item["filename"],
             "grid_ids": item["ids"],
-            "image_url": f"/api/grid/{item['chapter']}/{item['filename']}",
+            "image_url": f"/grids/{item['chapter']}/{item['filename']}",
         })
 
     return {

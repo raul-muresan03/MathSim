@@ -1,0 +1,19 @@
+{
+  "chapters": {
+    "admitere": {
+      "total_grids": 301
+    },
+    "algebra": {
+      "total_grids": 242
+    },
+    "analiza": {
+      "total_grids": 315
+    },
+    "geometrie": {
+      "total_grids": 35
+    },
+    "trigonometrie": {
+      "total_grids": 82
+    }
+  }
+}
