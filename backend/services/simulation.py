@@ -1,6 +1,7 @@
 import json
 import random
 import secrets
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List
 
@@ -10,6 +11,7 @@ from models import SessionData
 
 ROOT_DIR = Path(__file__).parent.parent
 INVENTORY_PATH = ROOT_DIR / "data" / "inventory.json"
+SESSION_TTL = timedelta(hours=24)
 
 
 def _load_inventory() -> List[dict]:
@@ -76,6 +78,7 @@ def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: 
         session_id = f"sim_{secrets.token_hex(8)}"
 
     session_record = SessionData(session_id=session_id, data_json=json.dumps(selected))
+    db.query(SessionData).filter(SessionData.created_at < datetime.now() - SESSION_TTL).delete()
     db.add(session_record)
     db.commit()
 
@@ -98,6 +101,11 @@ def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: 
 def grade_session(db: Session, session_id: str, submitted_answers: list) -> dict:
     session_record = db.query(SessionData).filter(SessionData.session_id == session_id).first()
     if not session_record:
+        raise KeyError("Session not found or expired.")
+
+    if datetime.now() - session_record.created_at > SESSION_TTL:
+        db.delete(session_record)
+        db.commit()
         raise KeyError("Session not found or expired.")
 
     session = json.loads(session_record.data_json)

@@ -145,6 +145,27 @@ class TestAdminEndpoints:
 
 
 class TestGradeFlow:
+    def test_expired_session_returns_404_without_saving_result(self, client, auth_headers, db):
+        from datetime import datetime, timedelta
+        from models import SessionData, Simulation
+
+        db.add(SessionData(
+            session_id="expired_flow",
+            data_json="[]",
+            created_at=datetime.now() - timedelta(hours=25),
+        ))
+        db.commit()
+
+        response = client.post("/api/simulation/grade", json={
+            "session_id": "expired_flow", "answers": [], "elapsed": 0,
+        }, headers=auth_headers)
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Session not found or expired."
+        db.rollback()
+        assert db.get(SessionData, "expired_flow") is None
+        assert db.query(Simulation).count() == 0
+
     def test_full_grade_flow(self, client, auth_headers):
         import json
         from models import SessionData
