@@ -69,6 +69,10 @@ update both settings and URL-encode special characters in the connection URL.
 
 ```bash
 cp .env.example .env
+
+# Generate a JWT signing key, then set SECRET_KEY in .env to the output
+docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_hex(32))"
+
 docker compose up -d postgres
 
 # Initialize the schema once, before starting the application
@@ -83,6 +87,12 @@ port. The `postgres_data` volume preserves local data between restarts.
 `docker compose down` preserves it; **`docker compose down -v` deletes it**.
 There is no SQLite fallback or data transfer from the old SQLite database.
 PostgreSQL starts empty, and application startup never creates tables.
+
+`SECRET_KEY` is mandatory: the backend refuses to start if it is blank or
+shorter than 32 characters. Use the random generator above, not a password or
+an example value. Keep the key stable across restarts; changing it invalidates
+existing JWTs and users must log in again. For an existing `.env`, replace
+the old `secret_key` value before starting the backend.
 
 ### Offline Pipeline
 
@@ -105,6 +115,7 @@ The test image installs `backend/requirements-test.txt`. Tests use a separate
 PostgreSQL service (`postgres-test`), credentials and database (`mathsim_test`),
 an internal network with no public ports, and temporary in-memory storage.
 The application database and Neon are never used by this profile.
+Its fixed JWT signing key is for tests only; never use it for deployment.
 
 `TEST_DATABASE_URL` is mandatory. Fixtures reject URLs that do not target the
 isolated `postgres-test/mathsim_test` service before importing the application
@@ -132,9 +143,10 @@ initialization script creates missing tables; it does not alter existing
 schemas. Future model changes require an explicit schema migration.
 A missing/empty `DATABASE_URL` or a non-PostgreSQL URL prevents startup.
 
-**Before public deployment:** protect the currently public user/statistics
-endpoints and require a safe JWT signing key. Those security changes are a
-separate task, not part of this PostgreSQL implementation.
+Set a separately generated `SECRET_KEY` in the **Vercel backend** environment,
+using the same generator as for local Docker. Keep it out of source control and
+`NEXT_PUBLIC_*` variables. Protected user/statistics endpoints enforce access
+on the backend; frontend redirects are only a UX convenience.
 
 ## Performance & Testing
 

@@ -1,3 +1,6 @@
+import pytest
+
+
 class TestAuth:
     def test_register_creates_user(self, client):
         response = client.post("/api/register", json={"username": "newuser", "password": "secret"})
@@ -38,13 +41,26 @@ class TestPublicEndpoints:
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
 
-    def test_stats_empty(self, client):
-        response = client.get("/api/stats")
-        assert response.status_code == 200
-        assert response.json()["total_users"] == 0
-
 
 class TestProtectedEndpoints:
+    @pytest.mark.parametrize("path", ["/api/stats", "/api/users", "/api/users/testuser/stats"])
+    def test_stats_and_users_require_auth(self, client, path):
+        response = client.get(path)
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("path", ["/api/stats", "/api/users", "/api/users/testuser/stats"])
+    def test_stats_and_users_reject_invalid_token(self, client, path):
+        response = client.get(path, headers={"Authorization": "Bearer invalid-token"})
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("path", ["/api/stats", "/api/users", "/api/users/testuser/stats"])
+    def test_old_default_signing_key_is_rejected(self, client, auth_headers, path):
+        from jose import jwt
+
+        token = jwt.encode({"sub": "testuser", "role": "admin"}, "secret_key", algorithm="HS256")
+        response = client.get(path, headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 401
+
     def test_generate_requires_no_auth(self, client):
         response = client.post("/api/simulation/generate", json={
             "total_quizzes": 2,
@@ -79,6 +95,17 @@ class TestProtectedEndpoints:
 
 
 class TestAdminEndpoints:
+    def test_stats_without_simulations(self, client, admin_headers):
+        response = client.get("/api/stats", headers=admin_headers)
+        assert response.status_code == 200
+        assert response.json()["total_users"] == 1
+        assert response.json()["total_simulations"] == 0
+
+    @pytest.mark.parametrize("path", ["/api/stats", "/api/users"])
+    def test_platform_reads_require_admin(self, client, auth_headers, path):
+        response = client.get(path, headers=auth_headers)
+        assert response.status_code == 403
+
     def test_promote_requires_admin(self, client, auth_headers):
         response = client.put("/api/users/testuser/role", headers=auth_headers)
         assert response.status_code == 403
@@ -91,14 +118,29 @@ class TestAdminEndpoints:
         response = client.delete("/api/users/testuser", headers=auth_headers)
         assert response.status_code == 403
 
-    def test_users_list(self, client):
-        response = client.get("/api/users")
+    def test_users_list(self, client, admin_headers):
+        response = client.get("/api/users", headers=admin_headers)
         assert response.status_code == 200
         assert "users" in response.json()
         assert "total" in response.json()
 
-    def test_user_stats_empty(self, client):
-        response = client.get("/api/users/nonexistent/stats")
+    def test_user_stats_owner(self, client, auth_headers):
+        response = client.get("/api/users/testuser/stats", headers=auth_headers)
+        assert response.status_code == 200
+        assert response.json()["username"] == "testuser"
+
+    def test_user_stats_other_user_forbidden(self, client, auth_headers):
+        client.post("/api/register", json={"username": "other", "password": "pass123"})
+        response = client.get("/api/users/other/stats", headers=auth_headers)
+        assert response.status_code == 403
+
+    def test_user_stats_other_user_as_admin(self, client, auth_headers, admin_headers):
+        response = client.get("/api/users/testuser/stats", headers=admin_headers)
+        assert response.status_code == 200
+        assert response.json()["username"] == "testuser"
+
+    def test_user_stats_empty(self, client, admin_headers):
+        response = client.get("/api/users/nonexistent/stats", headers=admin_headers)
         assert response.status_code == 404
 
 

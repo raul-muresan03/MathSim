@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// UX-only redirects. JWT claims decoded here are not verified.
+// The backend authenticates tokens and authorizes protected API requests.
+// Do not treat these redirects as an authorization boundary.
+
 const PUBLIC_ROUTES = ["/login", "/register", "/"];
 const ADMIN_ROUTES = ["/admin"];
 const STUDENT_ROUTES = ["/student"];
