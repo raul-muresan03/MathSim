@@ -1,11 +1,26 @@
 import os
-import tempfile
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
-_db_file = os.path.join(tempfile.gettempdir(), "mathsim_test.db")
+_test_database_url = os.getenv("TEST_DATABASE_URL", "").strip()
+_safety_message = "Tests require the isolated postgres-test/mathsim_test database. Use the Compose test profile."
+try:
+    _test_url = make_url(_test_database_url)
+except ArgumentError:
+    raise pytest.UsageError(_safety_message) from None
 
-os.environ["DATABASE_PATH"] = _db_file
+# Validate before importing the application or opening any connection.
+if (
+    _test_url.drivername not in ("postgres", "postgresql", "postgresql+psycopg")
+    or _test_url.host != "postgres-test"
+    or _test_url.port not in (None, 5432)
+    or _test_url.username != "mathsim_test"
+    or _test_url.database != "mathsim_test"
+):
+    raise pytest.UsageError(_safety_message)
+os.environ["DATABASE_URL"] = _test_database_url
 
 from main import app
 from database import engine, Base, SessionLocal
@@ -14,8 +29,10 @@ from database import engine, Base, SessionLocal
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+    try:
+        yield
+    finally:
+        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture

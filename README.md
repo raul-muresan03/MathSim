@@ -16,7 +16,8 @@ Two independent components communicating through a well-defined API:
 - **FastAPI Backend** — handles authentication, simulations, grading, and statistics
 - **Next.js Frontend** — the web interface; never touches files or the database directly
 
-Fully containerized via Docker Compose (2 containers) with healthchecks.
+The local stack runs in Docker Compose: frontend, backend, and PostgreSQL.
+Tests use a separate, temporary PostgreSQL container.
 
 ## Key Features
 
@@ -40,9 +41,9 @@ Fully containerized via Docker Compose (2 containers) with healthchecks.
 ```text
 MathSim/
 ├── backend/                # FastAPI (Auth, Simulations)
-│   ├── routers/            # auth, simulation, admin, grids
+│   ├── routers/            # auth, simulation, admin
 │   ├── services/           # Business logic
-│   └── tests/              # 26 tests (pytest)
+│   └── tests/              # pytest against isolated PostgreSQL
 ├── frontend/               # Next.js 16 (App Router, Tailwind CSS)
 │   └── src/
 │       ├── app/            # Pages (student, admin, auth)
@@ -51,8 +52,8 @@ MathSim/
 │       └── lib/            # API client, auth, constants
 ├── pipeline/               # CV Pipeline (offline)
 │   └── src/                # pdf2image, segmenter, indexer, answers, validator
-├── data/                   # Persistent data (SQLite DB, grids, answer key)
-├── docker-compose.yml      # Orchestrator (2 services)
+├── data/                   # Local offline pipeline inputs and outputs
+├── docker-compose.yml      # Local stack + isolated test profile
 └── .env.example            # Environment variable template
 ```
 
@@ -60,28 +61,80 @@ MathSim/
 
 ### Docker (recommended)
 
+Copy `.env.example` only if you do not already have `.env`. For an existing
+file, replace the obsolete `DATABASE_PATH` setting with the `DATABASE_URL` and
+`POSTGRES_PASSWORD` values from the example; preserve your other settings.
+The example credentials are for local Docker only. If changing the password,
+update both settings and URL-encode special characters in the connection URL.
+
 ```bash
 cp .env.example .env
-docker compose up -d
+docker compose up -d postgres
+
+# Initialize the schema once, before starting the application
+docker compose run --rm --build backend python init_db.py
+docker compose up -d --build
 ```
 
 Access: **Frontend** `http://localhost:3000` | **Backend API** `http://localhost:8000`
 
-### Local Development
+PostgreSQL runs on the internal Docker network and is not exposed on a host
+port. The `postgres_data` volume preserves local data between restarts.
+`docker compose down` preserves it; **`docker compose down -v` deletes it**.
+There is no SQLite fallback or data transfer from the old SQLite database.
+PostgreSQL starts empty, and application startup never creates tables.
+
+### Offline Pipeline
 
 ```bash
-# Backend
-cd backend && pip install -r requirements.txt && python main.py
-
-# Frontend
-cd frontend && npm install && npm run dev
-
-# Pipeline
 cd pipeline && pip install -r requirements.txt && python run.py --clean --all
-
-# Tests
-pytest backend/tests/ -v
 ```
+
+### Tests
+
+From the repository root, with `.env` configured as above:
+
+```bash
+docker compose --profile test run --rm --build tests
+
+# Remove only the test containers; leave the application's data alone
+docker compose --profile test rm --stop --force postgres-test
+```
+
+The test image installs `backend/requirements-test.txt`. Tests use a separate
+PostgreSQL service (`postgres-test`), credentials and database (`mathsim_test`),
+an internal network with no public ports, and temporary in-memory storage.
+The application database and Neon are never used by this profile.
+
+`TEST_DATABASE_URL` is mandatory. Fixtures reject URLs that do not target the
+isolated `postgres-test/mathsim_test` service before importing the application
+or connecting, then create/drop tables only in that test database. These checks
+deliberately restrict the suite to the Compose test environment.
+
+### PostgreSQL / Neon (deployment)
+
+Set `DATABASE_URL` in the **backend** environment to Neon's pooled PostgreSQL
+connection URL. Keep the supplied SSL query parameters; both `postgresql://`
+and `postgres://` URLs are accepted. Never expose it through a `NEXT_PUBLIC_*`
+variable or commit credentials.
+
+Install `backend/requirements.txt`, then initialize the tables once before
+deploying the backend:
+
+```bash
+export DATABASE_URL='postgresql://USER:PASSWORD@HOST-pooler/DATABASE?sslmode=require'
+python backend/init_db.py
+```
+
+PostgreSQL uses the external connection pool, with no persistent pool inside
+the function. Application startup does not create PostgreSQL tables. The
+initialization script creates missing tables; it does not alter existing
+schemas. Future model changes require an explicit schema migration.
+A missing/empty `DATABASE_URL` or a non-PostgreSQL URL prevents startup.
+
+**Before public deployment:** protect the currently public user/statistics
+endpoints and require a safe JWT signing key. Those security changes are a
+separate task, not part of this PostgreSQL implementation.
 
 ## Performance & Testing
 
@@ -89,7 +142,7 @@ pytest backend/tests/ -v
 |--------|-------|
 | Grid segmentation | **100%** (959/959) |
 | Answer key extraction | **98%** (19 out of 959 entries missing, 8 of which omitted in source) |
-| Automated tests | **26** (Pytest, all passing) |
+| Automated tests | `backend/tests/` — pytest against PostgreSQL |
 | API latency (100 concurrent clients) | **~12.5 ms** average (Locust) |
 | Parallelization speedup | **7.2×** (8.7s on 8 cores vs 62.9s sequential) |
 
@@ -98,6 +151,6 @@ pytest backend/tests/ -v
 | Layer | Technology |
 |-------|------------|
 | CV / OCR | Python 3.12, OpenCV, Tesseract, PyMuPDF |
-| Backend | FastAPI, SQLAlchemy, SQLite |
+| Backend | FastAPI, SQLAlchemy, PostgreSQL |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, Recharts |
 | Infrastructure | Docker, Docker Compose |

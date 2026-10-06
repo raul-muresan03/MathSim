@@ -1,24 +1,15 @@
 import os
-from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import engine, Base
 from routers import auth, simulation, admin
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    yield
 
 
 app = FastAPI(
     title="MathSim API",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
 app.add_middleware(

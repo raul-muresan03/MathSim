@@ -17,14 +17,67 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      - ./data:/app/data
     env_file: .env
     environment:
-      - DATABASE_PATH=/app/data/db/mathsim.db
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mathsim
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: mathsim
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mathsim", "-d", "mathsim"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-test:
+    image: postgres:17-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: mathsim_test
+      POSTGRES_PASSWORD: mathsim_test_only
+      POSTGRES_DB: mathsim_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks: [test]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mathsim_test", "-d", "mathsim_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      TEST_DATABASE_URL: postgresql://mathsim_test:mathsim_test_only@postgres-test:5432/mathsim_test
+      SECRET_KEY: mathsim_test_key_not_for_production
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    networks: [test]
+
+volumes:
+  postgres_data:
+
+networks:
+  test:
+    internal: true
