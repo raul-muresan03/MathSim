@@ -152,13 +152,3 @@ export async function deleteAccount(): Promise<{ message: string }> {
     headers: getAuthHeaders(),
   });
 }
-
-// AI Chat
-
-export function chatWithAI(username: string, message: string): Promise<Response> {
-  return fetch(`${API_URL}/api/ai/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, message }),
-  });
-}

@@ -6,17 +6,17 @@ MathSim transforms a static PDF containing nearly 1000 math grids into an intera
 ## Architecture
 
 ```
-Frontend (Next.js)  ──REST/SSE──▶  Backend (FastAPI)  ──HTTP──▶  Ollama (local LLM)
-    port 3000                          port 8000                     port 11434
+Frontend (Next.js)  ──REST──▶  Backend (FastAPI)
+    port 3000                    port 8000
 ```
 
-Three independent components communicating through well-defined APIs:
+Two independent components communicating through a well-defined API:
 
 - **CV Pipeline** — runs once, produces grid images and the answer key, then stops
-- **FastAPI Backend** — handles authentication, simulations, grading, statistics, and LLM proxy
+- **FastAPI Backend** — handles authentication, simulations, grading, and statistics
 - **Next.js Frontend** — the web interface; never touches files or the database directly
 
-Fully containerized via Docker Compose (3 containers) with healthchecks and resource limits.
+Fully containerized via Docker Compose (2 containers) with healthchecks.
 
 ## Key Features
 
@@ -35,29 +35,24 @@ Fully containerized via Docker Compose (3 containers) with healthchecks and reso
 - **Admin panel** — global statistics, weekly activity, per-chapter distribution, user management (promote/delete)
 - **Grid preview** — from the results page, any wrong answer can be visually inspected to see the original grid image
 
-### AI Assistant
-- **Local LLM** — `llama3.2:1b` running through Ollama, no API costs, no internet dependency
-- **Personalized context** — prompts include the student's real statistics (average score, per-chapter accuracy, history)
-- **SSE streaming** — responses streamed token-by-token via Server-Sent Events for an interactive experience
-
 ## Project Structure
 
 ```text
 MathSim/
-├── backend/                # FastAPI (Auth, Simulations, AI proxy)
-│   ├── routers/            # auth, simulation, admin, ai, grids
+├── backend/                # FastAPI (Auth, Simulations)
+│   ├── routers/            # auth, simulation, admin, grids
 │   ├── services/           # Business logic
 │   └── tests/              # 26 tests (pytest)
 ├── frontend/               # Next.js 16 (App Router, Tailwind CSS)
 │   └── src/
 │       ├── app/            # Pages (student, admin, auth)
-│       ├── components/     # Navbar, DataTable, AuthForm, AIChat
+│       ├── components/     # Navbar, DataTable, AuthForm
 │       ├── hooks/          # useAuth, useUserStats, useChapters
 │       └── lib/            # API client, auth, constants
 ├── pipeline/               # CV Pipeline (offline)
 │   └── src/                # pdf2image, segmenter, indexer, answers, validator
 ├── data/                   # Persistent data (SQLite DB, grids, answer key)
-├── docker-compose.yml      # Orchestrator (3 services + Ollama volume)
+├── docker-compose.yml      # Orchestrator (2 services)
 └── .env.example            # Environment variable template
 ```
 
@@ -68,9 +63,6 @@ MathSim/
 ```bash
 cp .env.example .env
 docker compose up -d
-
-# Pull the AI model (one-time)
-docker exec mathsim-ollama-1 ollama pull llama3.2:1b
 ```
 
 Access: **Frontend** `http://localhost:3000` | **Backend API** `http://localhost:8000`
@@ -109,4 +101,3 @@ pytest backend/tests/ -v
 | Backend | FastAPI, SQLAlchemy, SQLite |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, Recharts |
 | Infrastructure | Docker, Docker Compose |
-| AI | Ollama + llama3.2:1b (1B params) |
