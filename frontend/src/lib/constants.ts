@@ -9,9 +9,6 @@ export const CHAPTER_LABELS: Record<string, string> = {
 };
 
 export const TIMEFRAME_OPTIONS = [
-  { label: "7 zile", value: 7 },
   { label: "30 zile", value: 30 },
-  { label: "3 luni", value: 90 },
-  { label: "6 luni", value: 180 },
   { label: "Tot", value: null },
 ];
