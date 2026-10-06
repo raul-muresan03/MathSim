@@ -25,8 +25,3 @@ class SimulationResult(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-
-class ChatRequest(BaseModel):
-    username: str
-    message: str
