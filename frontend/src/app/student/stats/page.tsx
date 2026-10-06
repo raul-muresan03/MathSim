@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, TrendingUp, Loader2, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import AIChat from "@/components/AIChat";
 import { CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -165,7 +164,6 @@ export default function StudentStatsPage() {
         )}
       </div>
 
-      <AIChat username={user?.username} />
     </div>
   );
 }
