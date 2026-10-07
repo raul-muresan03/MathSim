@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, CheckCircle2, XCircle, Clock, Eye, X, RotateCcw, Home, ChevronDown, ChevronUp } from "lucide-react";
+import { useHydrated } from "@/hooks/useHydrated";
 
 interface ResultDetail {
   grid_id: string;
@@ -23,22 +24,22 @@ interface ResultsData {
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [results, setResults] = useState<ResultsData | null>(null);
+  const mounted = useHydrated();
+  const results = useMemo<ResultsData | null>(() => {
+    if (!mounted) return null;
+    try {
+      const raw = localStorage.getItem("mathsim_results");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, [mounted]);
   const [showDetails, setShowDetails] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem("mathsim_results");
-    if (!raw) {
-      router.push("/student");
-      return;
-    }
-    try {
-      setResults(JSON.parse(raw));
-    } catch {
-      router.push("/student");
-    }
-  }, [router]);
+    if (mounted && !results) router.push("/student");
+  }, [mounted, results, router]);
 
   useEffect(() => {
     if (previewImage) {

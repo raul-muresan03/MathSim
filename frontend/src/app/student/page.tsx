@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Calculator, Loader2 } from "lucide-react";
 import { generateSimulation } from "@/lib/api";
@@ -25,13 +25,11 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string; dot:
 
 export default function StudentDashboard() {
   const router = useRouter();
-  const user = useAuth();
-  const { gridsByChapter, loading: chaptersLoading } = useChapters();
+  useAuth();
+  const { gridsByChapter: chapterCounts, loading: isPageLoading } = useChapters();
   const [numQuizzes, setNumQuizzes] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [chapterCounts, setChapterCounts] = useState<Record<string, number>>({});
   const [timerOption, setTimerOption] = useState<number>(0);
   const [customTimer, setCustomTimer] = useState<string>("60");
 
@@ -42,13 +40,6 @@ export default function StudentDashboard() {
   const [chapterWeights, setChapterWeights] = useState<Record<string, string>>(
     MATH_CHAPTERS.reduce((acc, ch) => ({ ...acc, [ch.key]: "1.0" }), {}),
   );
-
-  useEffect(() => {
-    if (!chaptersLoading) {
-      setChapterCounts(gridsByChapter);
-      setIsPageLoading(false);
-    }
-  }, [gridsByChapter, chaptersLoading]);
 
   const estimations = useMemo(() => {
     const results: { key: string; label: string; color: string; count: number }[] = [];

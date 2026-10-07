@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 
 export default function Home() {
@@ -53,9 +53,11 @@ export default function Home() {
     rose: { numBg: "bg-rose-500", numText: "text-white", accent: "border-rose-200", accentDark: "dark:border-rose-800" },
   };
 
-  useEffect(() => {
+  const changeSlide = (index: number) => {
+    if (index === currentSlide) return;
     setImgError(false);
-  }, [currentSlide]);
+    setCurrentSlide(index);
+  };
 
   return (
     <div className="flex flex-col items-center">
@@ -123,13 +125,13 @@ export default function Home() {
                   <div className="flex flex-col items-end gap-4 shrink-0">
                     <div className="flex gap-3">
                       <button
-                        onClick={() => setCurrentSlide((prev) => (prev === 0 ? steps.length - 1 : prev - 1))}
+                        onClick={() => changeSlide(currentSlide === 0 ? steps.length - 1 : currentSlide - 1)}
                         className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all shadow-sm"
                       >
                         <ChevronLeft className="w-6 h-6" />
                       </button>
                       <button
-                        onClick={() => setCurrentSlide((prev) => (prev === steps.length - 1 ? 0 : prev + 1))}
+                        onClick={() => changeSlide(currentSlide === steps.length - 1 ? 0 : currentSlide + 1)}
                         className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all shadow-sm"
                       >
                         <ChevronRight className="w-6 h-6" />
@@ -139,7 +141,7 @@ export default function Home() {
                       {steps.map((_, i) => (
                         <button
                           key={i}
-                          onClick={() => setCurrentSlide(i)}
+                          onClick={() => changeSlide(i)}
                           className={`h-2.5 rounded-full transition-all duration-300 ${currentSlide === i
                             ? `w-8 ${colorMap[steps[currentSlide].color].numBg}`
                             : "w-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600"

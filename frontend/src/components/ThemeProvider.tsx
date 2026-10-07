@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 
 type Theme = "light" | "dark";
 
@@ -21,18 +22,12 @@ export default function ThemeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored) {
-      setTheme(stored);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-    setMounted(true);
-  }, []);
+  const mounted = useHydrated();
+  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
+  const theme = selectedTheme ?? (mounted
+    ? (localStorage.getItem("theme") as Theme | null)
+      ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : "light");
 
   useEffect(() => {
     if (!mounted) return;
@@ -46,7 +41,7 @@ export default function ThemeProvider({
   }, [theme, mounted]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    setSelectedTheme(theme === "dark" ? "light" : "dark");
   };
 
   if (!mounted) {

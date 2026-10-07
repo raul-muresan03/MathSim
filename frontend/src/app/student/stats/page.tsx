@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AlertTriangle, TrendingUp, Loader2, BookOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CHAPTER_LABELS, TIMEFRAME_OPTIONS } from "@/lib/constants";
@@ -12,13 +12,7 @@ export default function StudentStatsPage() {
   const [profileTimeframe, setProfileTimeframe] = useState<number | null>(30);
   const { stats: userProfile, loading: profileLoading } = useUserStats(user?.username, profileTimeframe ?? undefined);
 
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
+  if (!user) return null;
 
   return (
     <div className="flex-1 w-full bg-slate-50 dark:bg-slate-950 min-h-full transition-colors duration-300">

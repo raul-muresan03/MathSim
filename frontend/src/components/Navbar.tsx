@@ -8,7 +8,6 @@ import {
   X,
   LogIn,
   User,
-  Trash2,
   AlertTriangle,
   FileText,
   BarChart3,
@@ -22,6 +21,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { getStoredUser, clearAuth } from "@/lib/auth";
 import { deleteAccount } from "@/lib/api";
 import { useUserStats } from "@/hooks/useUserStats";
+import { useHydrated } from "@/hooks/useHydrated";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,7 +32,8 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ username: string, role: string } | null>(null);
+  const mounted = useHydrated();
+  const currentUser = mounted ? getStoredUser() : null;
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -48,15 +49,6 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  useEffect(() => {
-    const user = getStoredUser();
-    if (user) {
-      setCurrentUser(user);
-    } else {
-      setCurrentUser(null);
-    }
-  }, [pathname]);
-
   const { stats: userStats } = useUserStats(currentUser?.username);
 
   const isLoggedIn = !!currentUser;
@@ -66,7 +58,7 @@ export default function Navbar() {
     try {
       await deleteAccount();
       clearAuth();
-      window.location.href = "/";
+      window.location.assign(window.location.origin);
     } catch (err) {
       console.error("Delete account failed:", err);
       setIsDeleting(false);
@@ -192,7 +184,7 @@ export default function Navbar() {
                             <button
                               onClick={() => {
                                 clearAuth();
-                                window.location.href = "/";
+                                window.location.assign(window.location.origin);
                               }}
                               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors"
                             >

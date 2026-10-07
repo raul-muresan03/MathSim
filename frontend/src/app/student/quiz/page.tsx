@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useEffectEvent, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, AlertTriangle, Clock } from "lucide-react";
 import { CHAPTER_LABELS } from "@/lib/constants";
 import { gradeSimulation } from "@/lib/api";
+import { useHydrated } from "@/hooks/useHydrated";
 
 const CHAPTER_COLORS: Record<string, string> = {
   algebra: "bg-blue-500",
@@ -32,35 +33,31 @@ const ANSWER_OPTIONS = ["A", "B", "C", "D", "E"];
 
 export default function QuizPlayerPage() {
   const router = useRouter();
-  const [session, setSession] = useState<SessionData | null>(null);
+  const mounted = useHydrated();
+  const session = useMemo<SessionData | null>(() => {
+    if (!mounted) return null;
+    try {
+      const raw = localStorage.getItem("mathsim_session");
+      if (!raw) return null;
+      const data: SessionData = JSON.parse(raw);
+      return data.session_id && data.grids?.length ? data : null;
+    } catch {
+      return null;
+    }
+  }, [mounted]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const submissionStarted = useRef(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem("mathsim_session");
-    if (!raw) {
-      router.push("/student");
-      return;
-    }
-    try {
-      const data: SessionData = JSON.parse(raw);
-      if (!data.session_id || !data.grids?.length) {
-        throw new Error("Invalid session");
-      }
-      setSession(data);
-    } catch {
+    if (mounted && !session) {
       localStorage.removeItem("mathsim_session");
       router.push("/student");
     }
-  }, [router]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  }, [mounted, session, router]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -108,8 +105,8 @@ export default function QuizPlayerPage() {
     setAnswers((prev) => ({ ...prev, [gridId]: answer }));
   };
 
-  const handleSubmit = useCallback(async (force: boolean = false) => {
-    if (!session) return;
+  const handleSubmit = useCallback(async (force: boolean = false, elapsedSeconds: number = elapsed) => {
+    if (!session || submissionStarted.current) return;
     if (!force && answeredCount < totalQuestions) {
       const confirmEnd = window.confirm(
         `Mai ai ${totalQuestions - answeredCount} întrebări fără răspuns. Ești sigur că vrei să finalizezi simularea?`
@@ -117,6 +114,7 @@ export default function QuizPlayerPage() {
       if (!confirmEnd) return;
     }
 
+    submissionStarted.current = true;
     setIsSubmitting(true);
     setError(null);
 
@@ -124,13 +122,14 @@ export default function QuizPlayerPage() {
       const graded = await gradeSimulation(
         session.session_id,
         Object.entries(answers).map(([grid_id, answer]) => ({ grid_id, answer })),
-        elapsed,
+        elapsedSeconds,
       );
-      const results = { ...graded, elapsed };
+      const results = { ...graded, elapsed: elapsedSeconds };
       localStorage.setItem("mathsim_results", JSON.stringify(results));
       localStorage.removeItem("mathsim_session");
       router.push("/student/results");
     } catch (err) {
+      submissionStarted.current = false;
       const message = err instanceof Error ? err.message : undefined;
       setError(message || "Nu s-a putut contacta serverul.");
     } finally {
@@ -138,14 +137,18 @@ export default function QuizPlayerPage() {
     }
   }, [session, answers, elapsed, router, answeredCount, totalQuestions]);
 
-  useEffect(() => {
-    if (session?.timer && !isSubmitting) {
-      const totalSeconds = session.timer * 60;
-      if (elapsed >= totalSeconds) {
-        handleSubmit(true);
-      }
+  const onTick = useEffectEvent(() => {
+    const nextElapsed = elapsed + 1;
+    setElapsed(nextElapsed);
+    if (session?.timer && !isSubmitting && nextElapsed >= session.timer * 60) {
+      handleSubmit(true, nextElapsed);
     }
-  }, [elapsed, session, isSubmitting, handleSubmit]);
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => onTick(), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (!session) {
     return (

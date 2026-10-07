@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Pencil, FileText, Users, Clock, TrendingUp, BookOpen, Loader2, Eye, AlertTriangle, CheckCircle, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, } from "recharts";
 import { CHAPTER_LABELS } from "@/lib/constants";
@@ -9,6 +8,7 @@ import { getUsers, getAdminStats, getUserStats, deleteUser, promoteUser } from "
 import type { UserStatsResponse } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters } from "@/hooks/useChapters";
+import { useHydrated } from "@/hooks/useHydrated";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import UserEditModal from "@/components/admin/UserEditModal";
 import ConfirmActionModal from "@/components/admin/ConfirmActionModal";
@@ -21,9 +21,8 @@ interface UserData {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const user = useAuth("admin");
-  const { gridsByChapter, loading: chaptersLoading } = useChapters();
+  useAuth("admin");
+  const { gridsByChapter } = useChapters();
   const [users, setUsers] = useState<UserData[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [userPage, setUserPage] = useState(0);
@@ -36,9 +35,11 @@ export default function AdminDashboard() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
-  const [mounted, setMounted] = useState(false);
-  const [chapterData, setChapterData] = useState<{ capitol: string; grile: number }[]>([]);
-  const [totalGrile, setTotalGrile] = useState(0);
+  const mounted = useHydrated();
+  const chapterData = Object.entries(gridsByChapter)
+    .map(([key, count]) => ({ capitol: CHAPTER_LABELS[key] || key, grile: count }))
+    .sort((a, b) => b.grile - a.grile);
+  const totalGrile = Object.values(gridsByChapter).reduce((sum, count) => sum + count, 0);
   const [stats, setStats] = useState<{
     total_users: number;
     total_simulations: number;
@@ -66,22 +67,6 @@ export default function AdminDashboard() {
     hardest_chapter: null as string | null,
     hardest_wrong_count: 0,
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!chaptersLoading) {
-      const barData = Object.entries(gridsByChapter).map(([key, count]) => ({
-        capitol: CHAPTER_LABELS[key] || key,
-        grile: count,
-      }));
-      barData.sort((a, b) => b.grile - a.grile);
-      setChapterData(barData);
-      setTotalGrile(Object.values(gridsByChapter).reduce((s, c) => s + c, 0));
-    }
-  }, [gridsByChapter, chaptersLoading]);
 
   useEffect(() => {
     const fetchUsers = async () => {

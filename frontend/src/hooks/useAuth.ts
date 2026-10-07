@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser } from "@/lib/auth";
+import { useHydrated } from "@/hooks/useHydrated";
 
 export function useAuth(requiredRole?: string) {
   const router = useRouter();
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const mounted = useHydrated();
+  const user = mounted ? getStoredUser() : null;
+  const hasAccess = !!user && (!requiredRole || user.role === requiredRole);
 
   useEffect(() => {
-    const stored = getStoredUser();
-    if (!stored || (requiredRole && stored.role !== requiredRole)) {
+    if (mounted && !hasAccess) {
       router.replace("/");
-      return;
     }
-    setUser(stored);
-  }, [router, requiredRole]);
+  }, [mounted, hasAccess, router]);
 
-  return user;
+  return hasAccess ? user : null;
 }
