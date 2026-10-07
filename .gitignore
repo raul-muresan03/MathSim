@@ -46,6 +46,13 @@ GEMINI.md
 !frontend/public/grids/
 !frontend/public/grids/**
 
+# Landing slideshow images (must deploy with the frontend)
+!frontend/public/step1_pdf_to_png.png
+!frontend/public/step2_segmentation.png
+!frontend/public/step3_ocr_index.png
+!frontend/public/step4_answers.png
+!frontend/public/step5_generator.png
+
 # Bundled quiz inventory for the backend (serverless-friendly)
 !backend/data/
 !backend/data/**
