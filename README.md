@@ -7,6 +7,24 @@ MathSim transforms a static PDF containing nearly 1000 math grids into an intera
 
 Create a student account, choose your chapters, complete a simulation, and track your results. The interface is in Romanian.
 
+## Preview
+
+> **Screenshot placeholder — Exam simulation**
+>
+> Question image, answer selection, timer and navigation.
+
+<!-- Replace the placeholder above with the screenshot when available:
+![Exam simulation with answer selection and countdown timer](assets/screenshots/simulation.png)
+-->
+
+> **Screenshot placeholder — Student statistics (dark mode)**
+>
+> Progress chart, chapter accuracy and period filters.
+
+<!-- Replace the placeholder above with the screenshot when available:
+![Student progress and per-chapter accuracy in dark mode](assets/screenshots/statistics.png)
+-->
+
 ## Architecture
 
 ```mermaid
@@ -51,10 +69,9 @@ flowchart TB
     class pipeline,snapshot preparation
 ```
 
-Solid arrows represent processing or runtime requests; dashed arrows represent
-deployment-time artifact delivery. The browser calls the API directly through
-the shared domain. JWT verification and access checks belong to FastAPI;
-frontend redirects only guide navigation.
+Solid arrows show processing or runtime requests; dashed arrows show
+deployment-time artifact delivery. Browser API calls use the shared origin,
+with authentication and access checks enforced by FastAPI.
 
 Two runtime services and an offline computer vision pipeline:
 
@@ -66,10 +83,14 @@ Production uses **Vercel Hobby Services + Neon Free**. The root [`vercel.json`](
 defines `backend` and `frontend` as services sharing one domain. API routes keep
 their `/api` prefix. There are no server-to-server calls requiring service bindings.
 
-The generated assets are already included: **651 grid PNGs**, the public chapter
-manifest, the backend inventory, and five slideshow images. The offline pipeline
-is not deployed or required to run the web application. The answer key is used
-by the backend, but is visible in this public repository.
+The dataset contains **959 distinct numbered questions across 651 PNG images**;
+some images contain multiple questions. The images, public chapter manifest,
+backend inventory and five slideshow images are included in the repository,
+so running the web application does not require the offline pipeline.
+
+For this self-study demo, the answer key is deliberately included in the public
+repository to make the practice dataset reproducible. Grading uses the backend
+inventory; the answer key is not served as a frontend static asset.
 
 Locally, Docker Compose runs the frontend, backend, and PostgreSQL. Tests use a
 separate, temporary PostgreSQL container.
@@ -124,10 +145,9 @@ flowchart TB
     class package manual
 ```
 
-The branches show data dependencies. `run.py --all` executes the numbered
-stages in order; segmentation, indexing and answer extraction use worker
-processes internally. Coverage validation produces a report, not an automatic
-deployment gate. The published dataset is prepared separately from these outputs.
+`run.py --all` executes the stages in order, with worker processes inside
+segmentation, indexing and answer extraction. Coverage validation writes a
+report; the deployment snapshot is prepared separately.
 
 ### Web Platform
 - **Secure authentication** — JWT + bcrypt, two roles (student, admin), 8-hour token expiry by default
@@ -200,10 +220,8 @@ sequenceDiagram
     end
 ```
 
-This sequence follows a successful login and shows the grading failure paths.
-Session state survives function restarts because it is stored in PostgreSQL.
-Session consumption and result persistence are separate commits in the current
-implementation.
+Sessions persist in PostgreSQL across function restarts. Session consumption
+and result persistence currently use separate commits.
 
 ## Project Structure
 
@@ -225,6 +243,7 @@ MathSim/
 ├── pipeline/               # CV Pipeline (offline)
 │   └── src/                # pdf2image, segmenter, indexer, answers, validator
 ├── data/                   # Local offline pipeline inputs and outputs
+├── docs/DEPLOYMENT.md       # Vercel + Neon setup and verification
 ├── docker-compose.yml      # Local stack + isolated test profile
 ├── vercel.json             # Multi-service deployment and public routing
 └── .env.example            # Environment variable template
@@ -291,6 +310,14 @@ or `backend/data/inventory.json`; those are a separately prepared snapshot.
 
 ### Tests
 
+The backend suite contains **70 automated test cases**, including parametrized
+cases, covering:
+
+- Registration, login, JWT validation, and student/admin access rules.
+- Grading, the 24-hour session expiry boundary, and session cleanup.
+- Result persistence and statistics through the API.
+- PostgreSQL configuration, schema initialization, and test-database isolation.
+
 From the repository root, with `.env` configured as above:
 
 ```bash
@@ -300,113 +327,27 @@ docker compose --profile test run --rm --build tests
 docker compose --profile test rm --stop --force postgres-test
 ```
 
-The test image installs `backend/requirements-test.txt`. Tests use a separate
-PostgreSQL service (`postgres-test`), credentials and database (`mathsim_test`),
-an internal network with no public ports, and temporary in-memory storage.
-The application database and Neon are never used by this profile.
-Its fixed JWT signing key is for tests only; never use it for deployment.
+Tests use isolated PostgreSQL (`postgres-test/mathsim_test`) with temporary
+in-memory storage and no public ports. Fixtures require `TEST_DATABASE_URL`
+to target that service before importing the application or connecting; the
+application database and Neon are never used by this profile.
 
-`TEST_DATABASE_URL` is mandatory. Fixtures reject URLs that do not target the
-isolated `postgres-test/mathsim_test` service before importing the application
-or connecting, then create/drop tables only in that test database. These checks
-deliberately restrict the suite to the Compose test environment.
+The test image installs `backend/requirements-test.txt`; its fixed JWT signing
+key is for tests only. **Backend code coverage has not been measured.**
+
+Frontend validation has included linting, type checking, production builds and
+browser smoke checks; no automated frontend test suite is checked into the
+repository.
 
 ## Deployment: Vercel Services + Neon
 
-The [live demo](https://mathsim-lac.vercel.app) is already deployed. The steps
-below are for deploying your own instance using one Vercel project and one
-Neon database. Runtime versions are pinned to **Python 3.12** and **Node 24.x**.
+- **Hosting:** one Vercel Hobby project, with Next.js and FastAPI sharing a domain.
+- **Database:** Neon Free PostgreSQL with external pooling and SQLAlchemy `NullPool`.
+- **Runtime:** Python 3.12 and Node 24.x; schema initialization is explicit.
+- **Configuration:** secrets stay in Vercel; the public API origin is set at build time.
 
-### 1. Create and initialize the database
-
-Create a **Neon Free** project in **AWS Frankfurt**. In **Connect**, select
-the intended branch, primary read-write compute, database, and role. Copy both
-the direct URL for initialization and the pooled URL for the application.
-Keep all generated TLS parameters, including `sslmode=require` and
-`channel_binding=require` when present.
-
-For a new database, run the following from the repository root. Python 3 is
-used only to prompt for the URL; Docker provides the backend dependencies.
-
-```bash
-docker build --target runtime -t mathsim-backend-init ./backend
-python3 - <<'PY'
-import os
-import subprocess
-from getpass import getpass
-
-env = {**os.environ, "DATABASE_URL": getpass("Neon direct DATABASE_URL: ")}
-subprocess.run([
-    "docker", "run", "--rm", "-e", "DATABASE_URL",
-    "mathsim-backend-init", "python", "init_db.py",
-], env=env, check=True)
-PY
-```
-
-The script prints `Database schema initialized.` and creates `users`,
-`simulations`, and `session_data`. It creates missing tables but does not alter
-existing schemas; future model changes require an explicit schema migration.
-Do not run the test suite against Neon.
-
-### 2. Import and deploy the Vercel project
-
-1. Generate a **separate production `SECRET_KEY`** using the generator in the
-   local setup section, and keep it stable across deployments.
-2. In Vercel, choose **Add New… → Project** and import the repository from
-   `main`. Select **Hobby**, framework preset **Services**, and the repository
-   root directory. Vercel should detect exactly `backend` and `frontend` from
-   `vercel.json`.
-3. Add `DATABASE_URL` (the **pooled** Neon URL) and `SECRET_KEY` as **Secret**
-   variables for **Production**, then click **Deploy**.
-4. After the deployment is **Ready**, open the project's **Settings → Domains**
-   and copy its actual production `*.vercel.app` domain. Do not infer it from
-   the project name or copy the URL of a Preview deployment.
-5. Under **Environment Variables**, add the two **Config** variables below for
-   **Production**, using `https://` plus that exact domain, without a trailing
-   slash or `/api`.
-6. In **Settings → Functions → Function Regions**, select **Frankfurt (`fra1`)**.
-   Confirm **main** under **Environments → Production → Branch Tracking** and
-   **Standard Protection** under **Deployment Protection** so the production
-   domain is publicly accessible.
-7. Go to **Deployments → … → Redeploy** on the correct `main` deployment,
-   select **Production**, and rebuild with the saved settings. Then test the
-   application on the stable production domain in an incognito window.
-
-Final project-level environment variables:
-
-| Variable | Type | Value |
-|---|---|---|
-| `DATABASE_URL` | Secret | Neon pooled PostgreSQL URL, with all supplied TLS parameters |
-| `SECRET_KEY` | Secret | Random production JWT signing key, at least 32 characters |
-| `NEXT_PUBLIC_API_URL` | Config | Your actual production origin, copied from the project's Domains settings |
-| `CORS_ORIGINS` | Config | The same production origin |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Config | Optional; defaults to `480` |
-
-The first deployment is an intermediate step to obtain the real domain.
-Until `NEXT_PUBLIC_API_URL` is set and the frontend rebuilt, API calls from the
-browser fall back to `http://localhost:8000`. `NEXT_PUBLIC_*` values are embedded
-at build time: saving a new value alone does not update an existing deployment.
-Test registration and login only after the redeploy.
-
-Keep production secrets in Vercel, out of Git and `NEXT_PUBLIC_*` variables.
-PostgreSQL uses Neon's external pooler with SQLAlchemy `NullPool` and psycopg
-`prepare_threshold=None`. Both `postgresql://` and `postgres://` URLs are
-accepted. Missing/invalid database configuration or a short JWT key prevents
-backend startup. Authorization is enforced by the backend; frontend redirects
-are only a UX convenience.
-
-### 3. Verify the public application
-
-- Check the landing page, slideshow, dark mode, and grid images.
-- Register → log in → generate a simulation → submit answers → view results
-  and saved statistics. Check the interface on a narrow screen as well.
-- `GET /api/health` returns `{"status":"ok"}`, but does **not** query the database.
-- After 6–10 minutes without database traffic, test login and saved statistics
-  again. Neon Free suspends inactive compute after 5 minutes, so the first
-  database-backed request may be slower.
-
-Vercel Hobby and Neon Free suit a personal, non-commercial demo within their
-usage limits. No custom domain or paid add-on is needed.
+See the [deployment guide](docs/DEPLOYMENT.md) for database setup, environment
+variables, dashboard steps and production checks.
 
 ## Performance & Testing
 
@@ -414,7 +355,7 @@ usage limits. No custom domain or paid add-on is needed.
 |--------|-------|
 | Grid segmentation | **100%** (959/959) |
 | Answer key extraction | **98%** (19 out of 959 entries missing, 8 of which omitted in source) |
-| Automated tests | `backend/tests/` — pytest against PostgreSQL |
+| Automated tests | **70 backend test cases** — pytest against isolated PostgreSQL; code coverage not measured |
 | API latency (100 concurrent clients) | **~12.5 ms** average (Locust) |
 | Parallelization speedup | **7.2×** (8.7s on 8 cores vs 62.9s sequential) |
 

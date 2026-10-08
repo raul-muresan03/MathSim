@@ -29,7 +29,8 @@ env/
 .ipynb_checkpoints
 
 data/
-docs/
+/docs/*
+!/docs/DEPLOYMENT.md
 logs/
 !logs/.gitkeep
 outputs/
@@ -52,6 +53,10 @@ GEMINI.md
 !frontend/public/step3_ocr_index.png
 !frontend/public/step4_answers.png
 !frontend/public/step5_generator.png
+
+# README screenshots
+!/assets/screenshots/
+!/assets/screenshots/**
 
 # Bundled quiz inventory for the backend (serverless-friendly)
 !backend/data/
