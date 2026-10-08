@@ -5,256 +5,125 @@ MathSim transforms a static PDF containing nearly 1000 math grids into an intera
 
 **Live demo: [mathsim-lac.vercel.app](https://mathsim-lac.vercel.app)**
 
-Create a student account, choose your chapters, complete a simulation, and track your results. The interface is in Romanian.
+Create a student account to get started. The interface is in Romanian.
 
-## Preview
+## Using MathSim
 
-> **Screenshot placeholder — Exam simulation**
->
-> Question image, answer selection, timer and navigation.
+### Solve a simulation
 
-<!-- Replace the placeholder above with the screenshot when available:
-![Exam simulation with answer selection and countdown timer](assets/screenshots/simulation.png)
--->
+Choose from Algebra, Analysis, Geometry, Trigonometry and Admission questions,
+then generate a timed simulation with weighted chapter selection. Navigate
+between questions and submit your answers, or let the timer submit them on expiry.
 
-> **Screenshot placeholder — Student statistics (dark mode)**
->
-> Progress chart, chapter accuracy and period filters.
+![Exam simulation with answer selection, timer and navigation](frontend/public/step5_generator.png)
 
-<!-- Replace the placeholder above with the screenshot when available:
-![Student progress and per-chapter accuracy in dark mode](assets/screenshots/statistics.png)
--->
+### Review your progress
 
-## Architecture
+Each submission receives a score from 0 to 10 and a per-question breakdown,
+with image previews to revisit mistakes. Saved results feed the statistics
+dashboard, showing score trends and chapter accuracy for the last 30 days or all time.
 
-```mermaid
-flowchart TB
-    subgraph offline["Offline preparation · developer machine"]
-        pipeline["Computer vision pipeline<br/>PDF → grid images and answer key"]
-        snapshot["Prepared dataset snapshot<br/>Tracked in Git"]
-        pipeline --> snapshot
-    end
+![Student progress and per-chapter accuracy in dark mode](docs/statistics.png)
 
-    subgraph client["Client · outside the backend trust boundary"]
-        browser["Browser<br/>UI, user input and access token"]
-    end
+The platform also includes persistent dark mode and an admin panel for global
+statistics and user management, with separate student and administrator access.
 
-    subgraph vercel["Vercel Hobby · one public HTTPS domain"]
-        routing["Public routing<br/>vercel.json"]
-        frontend["frontend · Next.js<br/>Pages, JavaScript, grid PNGs and manifest"]
-        backend["backend · FastAPI<br/>Authentication and access rules<br/>Simulations, grading and statistics"]
-        inventory["Bundled inventory<br/>Read-only metadata and answer key"]
+## How it works
 
-        routing -->|"/api/* · matched first"| backend
-        routing -->|"All other paths"| frontend
-        backend -->|"Read"| inventory
-    end
+### Architecture
 
-    subgraph neon["Neon Free · durable storage"]
-        pool["PgBouncer<br/>External connection pool"]
-        database[("PostgreSQL<br/>users · session_data · simulations")]
-        pool --> database
-    end
-
-    browser -->|"HTTPS · same-origin page and API requests"| routing
-    backend -->|"PostgreSQL over TLS<br/>SQLAlchemy + psycopg · NullPool"| pool
-    snapshot -.->|"Deploy PNGs and public manifest"| frontend
-    snapshot -.->|"Deploy inventory.json"| inventory
-
-    classDef service fill:#eaf2ff,stroke:#2563eb,color:#172554
-    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b
-    classDef preparation fill:#fff7ed,stroke:#d97706,color:#78350f
-    class routing,frontend,backend service
-    class pool,database,inventory data
-    class pipeline,snapshot preparation
-```
-
-Solid arrows show processing or runtime requests; dashed arrows show
-deployment-time artifact delivery. Browser API calls use the shared origin,
-with authentication and access checks enforced by FastAPI.
-
-Two runtime services and an offline computer vision pipeline:
-
-- **CV Pipeline** — extracts grid images and the answer key from the source PDF; runs locally when preparing the dataset
-- **FastAPI Backend** — handles authentication, simulations, grading, and statistics
-- **Next.js Frontend** — serves the interface and grid images; calls the API from the browser and never connects directly to the database
-
-Production uses **Vercel Hobby Services + Neon Free**. The root [`vercel.json`](vercel.json)
-defines `backend` and `frontend` as services sharing one domain. API routes keep
-their `/api` prefix. There are no server-to-server calls requiring service bindings.
-
-The dataset contains **959 distinct numbered questions across 651 PNG images**;
-some images contain multiple questions. The images, public chapter manifest,
-backend inventory and five slideshow images are included in the repository,
-so running the web application does not require the offline pipeline.
-
-For this self-study demo, the answer key is deliberately included in the public
-repository to make the practice dataset reproducible. Grading uses the backend
-inventory; the answer key is not served as a frontend static asset.
-
-Locally, Docker Compose runs the frontend, backend, and PostgreSQL. Tests use a
-separate, temporary PostgreSQL container.
-
-## Key Features
-
-### Digitization Pipeline
-- **Contour-based segmentation** — grid extraction from PDF using Suzuki-Abe contour detection and the original *Contour Masking* technique, which preserves the exact shape of each grid (circle + rectangle) rather than a rough bounding box
-- **Page Sequence Voting** — original algorithm that exploits consecutive grid numbering to correct OCR errors without manual validation; achieves 100% accuracy (959/959 grids)
-- **Automated answer key extraction** — processes 4 ultra-dense pages (~240 answers/page, 6 columns) using morphological dilation with interval validation (*Ghost Digit Cleanup*, *Page Range Validation*)
-- **CPU parallelization** — multi-core processing with zero synchronization overhead; 7.2× speedup over sequential mode (8.7s vs 62.9s for 142 pages)
+MathSim separates offline dataset preparation from the running web application.
+The computer vision pipeline produces the questions and answer key; Next.js and
+FastAPI deliver simulations backed by PostgreSQL.
 
 ```mermaid
 flowchart TB
-    pdf[/"Source PDF"/] --> raster["1. Rasterize pages<br/>PyMuPDF · 300 DPI"]
+    subgraph Offline["1. Computer Vision Pipeline"]
+        PDF["Raw PDF Document"]
+        CV["Computer Vision Preprocessing & OCR<br/>"]
+        Data["Extracted Assets<br/>(PNGs + final_answers.json)"]
 
-    subgraph questions["Question-page processing"]
-        segment["2. Segment grids<br/>Contours and shape-preserving masks"]
-        index["3. Identify and organize grids<br/>OCR + Page Sequence Voting"]
-        pngs[/"Grid PNGs grouped by chapter"/]
-        segment --> index --> pngs
+        PDF --> CV
+        CV --> Data
     end
 
-    subgraph answers["Answer-page processing"]
-        extract["4. Extract answers<br/>OCR, digit cleanup and page-range validation"]
-        key[/"final_answers.json"/]
-        extract --> key
+    subgraph App["2. Web Platform"]
+        Frontend["Frontend Next.js"]
+        Backend["Backend FastAPI<br/>(Auth, Simulations, Grading)"]
+        DB[("PostgreSQL<br/>Database")]
+
+        Frontend -->|"REST API / JSON"| Backend
+        Backend <--> DB
     end
 
-    raster -->|"Question pages"| segment
-    raster -->|"Answer pages"| extract
-    pngs --> validate["5. Check chapter ID coverage"]
-    validate --> report[/"missing_grile.txt per chapter"/]
-
-    subgraph preparation["Separate dataset preparation · outside run.py"]
-        package["Prepare the deployment snapshot"]
-        public["frontend/public/grids/<br/>Grid PNGs and chapter-count manifest"]
-        bundled["backend/data/inventory.json<br/>Grid metadata and answers"]
-        package --> public
-        package --> bundled
-    end
-
-    pngs --> package
-    key --> package
-    report -.->|"Available for review"| package
-
-    classDef process fill:#eaf2ff,stroke:#2563eb,color:#172554
-    classDef artifact fill:#ecfdf5,stroke:#059669,color:#064e3b
-    classDef manual fill:#fff7ed,stroke:#d97706,color:#78350f
-    class raster,segment,index,extract,validate process
-    class pdf,pngs,key,report,public,bundled artifact
-    class package manual
+    Data -.->|"Dataset Import"| App
 ```
 
-`run.py --all` executes the stages in order, with worker processes inside
-segmentation, indexing and answer extraction. Coverage validation writes a
-report; the deployment snapshot is prepared separately.
+The frontend serves the interface and images, making API calls from the browser.
+FastAPI handles authentication, grading and database access; the frontend never
+connects directly to PostgreSQL.
 
-### Web Platform
-- **Secure authentication** — JWT + bcrypt, two roles (student, admin), 8-hour token expiry by default
-- **Custom simulations** — weighted, randomized selection by chapter (Algebra, Analysis, Geometry, Trigonometry, Admission), without repeating image files within a session
-- **Interactive quiz** — countdown timer, auto-submit on expiry, free navigation between grids, double navigation guard to prevent accidental exit
-- **Automatic grading** — 0–10 scale with per-grid breakdown (submitted answer, expected answer, correct/wrong status)
-- **Learning analytics** — time-based progress chart (LineChart), per-chapter accuracy bars, last-30-days and all-time filters
-- **Admin panel** — global statistics, weekly activity, per-chapter distribution, user management (promote/delete)
-- **Grid preview** — from the results page, any wrong answer can be visually inspected to see the original grid image
-- **Session expiry** — unfinished simulation sessions expire after 24 hours
-- **Dark mode** — persistent theme selection across pages
+### PDF digitization and dataset
+
+The offline pipeline turns the source PDF into reusable question images and an
+answer key through four main techniques:
+
+- **Contour Masking** - contour-based segmentation preserves each grid's shape.
+- **Page Sequence Voting** - consecutive question numbering helps correct OCR errors.
+- **Answer extraction** - morphological dilation, Ghost Digit Cleanup and Page Range Validation process the answer pages.
+- **Parallel processing** - worker processes accelerate segmentation, indexing and answer extraction.
+
+The prepared dataset contains **959 distinct numbered questions across 651 PNG
+images**; some images contain multiple questions. Images, the chapter manifest
+and backend inventory are bundled, so the web app runs without executing the pipeline.
+
+For reproducibility, this self-study demo includes the answer key in the public
+repository. It is bundled with the backend, not served as a frontend static asset.
+
+### Simulation lifecycle
+
+For each simulation, FastAPI selects questions from the inventory and saves
+their answer key in an active session. On submission, it grades against that
+saved session and records the result for the student's progress history.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Browser as Browser UI
-    participant Frontend as Next.js / static assets
-    participant API as FastAPI
-    participant DB as Neon PostgreSQL
+    actor User as User / Browser
+    participant API as Backend (FastAPI)
+    participant DB as PostgreSQL
 
-    Note over Browser,API: Page and API requests share one HTTPS origin
-    Browser->>Frontend: GET /login and UI assets
-    Frontend-->>Browser: HTML and JavaScript
-    Browser->>API: POST /api/login · credentials
-    API->>DB: Find user
-    DB-->>API: User and stored password hash
-    API->>API: Verify bcrypt hash and sign JWT
-    API-->>Browser: Access token · 8-hour default expiry
+    User->>API: POST /api/simulation/generate (chapters, total_quizzes)
+    API->>DB: Save active session (session_data)
+    API-->>User: Return questions (without answer key)
 
-    Browser->>API: POST /api/simulation/generate · chapters and count
-    Note right of API: Generation is public in the current API
-    API->>API: Read inventory and select grids
-    API->>DB: Prune expired sessions<br/>Save grids and answer key, then commit
-    DB-->>API: Session persisted
-    API-->>Browser: Session ID, grid IDs and image URLs · no answer key
+    Note over User: Quiz solving & timer
 
-    loop Each selected image
-        Browser->>Frontend: GET /grids/chapter/filename.png
-        Frontend-->>Browser: Grid PNG
-    end
-
-    Browser->>API: POST /api/simulation/grade · session ID, answers, Bearer JWT
-    API->>API: Verify JWT signature and expiry
-    break Missing, invalid or expired token
-        API-->>Browser: 401 Unauthorized
-    end
-    API->>DB: Resolve current user from JWT subject
-    DB-->>API: User, if present
-    break User no longer exists
-        API-->>Browser: 401 Unauthorized
-    end
-    API->>DB: Read saved session
-    DB-->>API: Session snapshot and creation time, if present
-
-    alt Session missing or older than 24 hours
-        opt Expired session record exists
-            API->>DB: Delete expired session and commit
-        end
-        API-->>Browser: 404 Session not found or expired
-    else Session is valid
-        API->>API: Grade against the saved answer key
-        API->>DB: Delete consumed session and commit
-        API->>DB: Save result linked to the current user and commit
-        API-->>Browser: Score and per-grid breakdown
-        Browser->>API: GET /api/users/username/stats · Bearer JWT
-        API->>API: Authenticate and check own-user or admin access
-        API->>DB: Query persisted simulation results
-        DB-->>API: Results
-        API-->>Browser: Progress and chapter statistics
-    end
+    User->>API: POST /api/simulation/grade (session_id, answers, Bearer JWT)
+    API->>API: Calculate score against answer key
+    API->>DB: Remove active session, then save result
+    API-->>User: Return score and per-question results
 ```
 
-Sessions persist in PostgreSQL across function restarts. Session consumption
-and result persistence currently use separate commits.
+Sessions persist in PostgreSQL across function restarts and expire after 24 hours;
+grading requires a valid JWT. Session consumption and result persistence currently
+use separate commits.
 
-## Project Structure
+### Tech stack
 
-```text
-MathSim/
-├── backend/                # FastAPI (Auth, Simulations)
-│   ├── data/inventory.json  # Grid metadata and answer key
-│   ├── routers/            # auth, simulation, admin
-│   ├── services/           # Business logic
-│   ├── init_db.py           # Explicit PostgreSQL schema initialization
-│   └── tests/              # pytest against isolated PostgreSQL
-├── frontend/               # Next.js 16 (App Router, Tailwind CSS)
-│   ├── public/             # Grid PNGs, chapter manifest, slideshow images
-│   └── src/
-│       ├── app/            # Pages (student, admin, auth)
-│       ├── components/     # Navbar, AuthForm, ThemeProvider, admin UI
-│       ├── hooks/          # useAuth, useUserStats, useChapters
-│       └── lib/            # API client, auth, constants
-├── pipeline/               # CV Pipeline (offline)
-│   └── src/                # pdf2image, segmenter, indexer, answers, validator
-├── data/                   # Local offline pipeline inputs and outputs
-├── docs/DEPLOYMENT.md       # Vercel + Neon setup and verification
-├── docker-compose.yml      # Local stack + isolated test profile
-├── vercel.json             # Multi-service deployment and public routing
-└── .env.example            # Environment variable template
-```
+| Layer | Technology |
+|-------|------------|
+| CV / OCR | Python 3.12, OpenCV, Tesseract, PyMuPDF |
+| Backend | Python 3.12, FastAPI, SQLAlchemy, psycopg, PostgreSQL, JWT, bcrypt |
+| Frontend | Node.js 24, Next.js 16.4, React 19, TypeScript, Tailwind CSS, Recharts |
+| Infrastructure | Docker Compose, PostgreSQL 17 locally, Vercel Hobby Services, Neon Free |
 
-## Installation
+## Run locally
 
 ### Local development with Docker
 
-Requires Docker with Docker Compose v2. Run commands from the repository root.
-Create `.env` if it does not already exist, then generate a JWT signing key:
+Requires Docker with Docker Compose v2 or newer. Commands use Bash and run from
+the repository root. For a first-time setup, create `.env` and generate a JWT key:
 
 ```bash
 test -f .env || cp .env.example .env
@@ -262,11 +131,12 @@ test -f .env || cp .env.example .env
 docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Set `SECRET_KEY` in `.env` to the generated value **before starting the app**.
-For an existing `.env`, use [`.env.example`](.env.example) as the reference.
-The example database credentials are for local Docker only. If changing the
-password, update both `POSTGRES_PASSWORD` and `DATABASE_URL`, URL-encoding
-special characters in the connection URL.
+Set `SECRET_KEY` in `.env` to the generated value. For an existing setup, keep
+your key and check the local URLs against [`.env.example`](.env.example).
+The example credentials are for local Docker only. Choose any replacement
+password before initializing PostgreSQL, updating both `POSTGRES_PASSWORD` and
+`DATABASE_URL` (URL-encode special characters in the URL). Changing `.env` alone
+does not change the password stored in an existing database volume.
 
 ```bash
 docker compose up -d postgres
@@ -278,23 +148,17 @@ docker compose up -d --build
 
 Access: **Frontend** `http://localhost:3000` | **Backend API** `http://localhost:8000`
 
-PostgreSQL runs on the internal Docker network and is not exposed on a host
-port. The `postgres_data` volume preserves local data between restarts.
-`docker compose down` preserves it; **`docker compose down -v` deletes it**.
-PostgreSQL is the only supported database. It starts empty, and application
-startup never creates tables.
+PostgreSQL stays on the internal Docker network, with data persisted in
+`postgres_data`. `docker compose down` preserves it; **`docker compose down -v`
+deletes it**. Schema initialization is manual; application startup never creates
+tables. Keep `SECRET_KEY` stable across restarts to preserve existing JWTs.
 
-`SECRET_KEY` is mandatory: the backend refuses to start if it is blank or
-shorter than 32 characters. Use the random generator above, not a password or
-an example value. Keep the key stable across restarts; changing it invalidates
-existing JWTs and users must log in again.
+### Optional: regenerate the dataset
 
-### Offline Pipeline
-
-Requires Python 3.12 and the Tesseract OCR executable on `PATH`. Place the source
-PDF at `data/raw/culegere_grile_utcn.pdf`; it is not included in the repository.
-The pipeline's page ranges and chapter layout are configured for that document
-in `pipeline/src/configs/config.py`.
+To rerun digitization, install Python 3.12 with `venv` support and Tesseract OCR
+on `PATH`, including its English (`eng`) language data. Place the source PDF at
+`data/raw/culegere_grile_utcn.pdf` (not included); page ranges and chapter layout
+in `pipeline/src/configs/config.py` are specific to that document.
 
 ```bash
 python3.12 -m venv .venv
@@ -303,22 +167,15 @@ python -m pip install -r pipeline/requirements.txt
 python pipeline/run.py --all
 ```
 
-Outputs are written under `data/temp/` and `data/processed/`. Add `--clean` to
-delete those previous outputs before regenerating them. Running the pipeline
-does not automatically replace the deployed assets in `frontend/public/grids/`
-or `backend/data/inventory.json`; those are a separately prepared snapshot.
+Outputs go to `data/temp/` and `data/processed/`; `--clean` deletes previous outputs.
+Preparing `frontend/public/grids/` and `backend/data/inventory.json` from them
+is a separate step.
 
-### Tests
+## Testing and performance
 
-The backend suite contains **70 automated test cases**, including parametrized
-cases, covering:
-
-- Registration, login, JWT validation, and student/admin access rules.
-- Grading, the 24-hour session expiry boundary, and session cleanup.
-- Result persistence and statistics through the API.
-- PostgreSQL configuration, schema initialization, and test-database isolation.
-
-From the repository root, with `.env` configured as above:
+The **70 backend test cases**, including parametrizations, cover authentication,
+student/admin authorization, grading, session expiry, saved statistics and
+database initialization. Run them from the repository root with `.env` configured:
 
 ```bash
 docker compose --profile test run --rm --build tests
@@ -327,44 +184,42 @@ docker compose --profile test run --rm --build tests
 docker compose --profile test rm --stop --force postgres-test
 ```
 
-Tests use isolated PostgreSQL (`postgres-test/mathsim_test`) with temporary
-in-memory storage and no public ports. Fixtures require `TEST_DATABASE_URL`
-to target that service before importing the application or connecting; the
-application database and Neon are never used by this profile.
+Compose supplies a separate, temporary PostgreSQL database (`postgres-test/mathsim_test`)
+and a test-only JWT key. Fixtures reject database URLs outside that service;
+the application database and Neon are never used by this profile.
 
-The test image installs `backend/requirements-test.txt`; its fixed JWT signing
-key is for tests only. **Backend code coverage has not been measured.**
+Backend code coverage has not been measured. Frontend validation has included
+linting, type checking, production builds and browser smoke checks; no automated
+frontend suite is checked into the repository.
 
-Frontend validation has included linting, type checking, production builds and
-browser smoke checks; no automated frontend test suite is checked into the
-repository.
-
-## Deployment: Vercel Services + Neon
-
-- **Hosting:** one Vercel Hobby project, with Next.js and FastAPI sharing a domain.
-- **Database:** Neon Free PostgreSQL with external pooling and SQLAlchemy `NullPool`.
-- **Runtime:** Python 3.12 and Node 24.x; schema initialization is explicit.
-- **Configuration:** secrets stay in Vercel; the public API origin is set at build time.
-
-See the [deployment guide](docs/DEPLOYMENT.md) for database setup, environment
-variables, dashboard steps and production checks.
-
-## Performance & Testing
+### Performance
 
 | Metric | Value |
 |--------|-------|
 | Grid segmentation | **100%** (959/959) |
 | Answer key extraction | **98%** (19 out of 959 entries missing, 8 of which omitted in source) |
-| Automated tests | **70 backend test cases** — pytest against isolated PostgreSQL; code coverage not measured |
 | API latency (100 concurrent clients) | **~12.5 ms** average (Locust) |
 | Parallelization speedup | **7.2×** (8.7s on 8 cores vs 62.9s sequential) |
 
-## Tech Stack
+## Deployment
 
-| Layer | Technology |
-|-------|------------|
-| CV / OCR | Python 3.12, OpenCV, Tesseract, PyMuPDF |
-| Backend | Python 3.12, FastAPI, SQLAlchemy, psycopg, PostgreSQL |
-| Frontend | Node.js 24, Next.js 16.4, React 19, TypeScript, Tailwind CSS, Recharts |
-| Local development | Docker, Docker Compose, PostgreSQL 17 |
-| Deployment | Vercel Hobby (Services), Neon Free (PostgreSQL) |
+The live demo uses one **Vercel Hobby Services** project and **Neon Free**.
+[`vercel.json`](vercel.json) routes `/api/*` to FastAPI and other paths to Next.js
+on the same domain. Database connections use Neon's pooler with SQLAlchemy `NullPool`.
+
+See the [deployment guide](docs/DEPLOYMENT.md) for database initialization,
+environment variables, frontend rebuilds and production checks.
+
+## Project structure
+
+```text
+MathSim/
+├── backend/                # FastAPI, database models, inventory and pytest suite
+├── frontend/               # Next.js interface, grid images and chapter manifest
+├── pipeline/               # Offline PDF segmentation, OCR and answer extraction
+├── data/                   # Local pipeline inputs and outputs (not tracked)
+├── docs/DEPLOYMENT.md       # Vercel + Neon setup and verification
+├── docker-compose.yml      # Local stack and isolated test profile
+├── vercel.json             # Production services and routing
+└── .env.example            # Local environment template
+```
