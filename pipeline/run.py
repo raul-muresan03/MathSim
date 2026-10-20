@@ -1,9 +1,9 @@
 import argparse
 import sys
 import shutil
-from pathlib import Path
 from multiprocessing import Pool, cpu_count
 from collections import defaultdict
+import json
 
 MAX_WORKERS = min(cpu_count(), 8)
 
@@ -12,7 +12,7 @@ from src.segmenter import process_single_page
 from src.indexer import process_page_group
 from src.answers import process_answer_page
 from src.validator import validate_chapter
-from src.configs.config import *
+from config import RAW_QUIZZES_DIR, ANSWERS_PAGES, PROCESSED_DIR, MATH_CHAPTERS, TEMP_DIR
 
 def run_segmentation():
     print("\n--- [STEP 2] Page Segmentation (7-148) ---")
@@ -50,7 +50,6 @@ def run_answers():
     sorted_answers = dict(sorted(final_answers.items()))
     output_path = PROCESSED_DIR / "final_answers.json"
     with open(output_path, "w", encoding="utf-8") as f:
-        import json
         json.dump(sorted_answers, f, indent=4)
     print(f"Generated {output_path} with {len(sorted_answers)} answers.")
 

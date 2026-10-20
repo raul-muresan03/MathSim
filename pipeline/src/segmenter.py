@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from pathlib import Path
-from .configs.config import *
+from config import BINARY_THRESHOLD, MIN_CONTOUR_AREA, PAGES_DIR, RAW_QUIZZES_DIR
 
 def preprocess_image(image_path):
     original = cv2.imread(image_path)

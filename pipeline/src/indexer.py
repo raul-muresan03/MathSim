@@ -4,8 +4,8 @@ import re
 import shutil
 import logging
 from pathlib import Path
-from collections import defaultdict, Counter
-from .configs.config import *
+from collections import Counter
+from config import BINARY_THRESHOLD, MIN_CIRCLE_SIZE, MAX_CIRCLE_SIZE, ASPECT_RATIO_MIN, ASPECT_RATIO_MAX, MAX_CIRCLE_X, OCR_REPLACEMENTS, MATH_CHAPTERS, get_chapter_by_page
 
 LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 LOG_DIR.mkdir(exist_ok=True)

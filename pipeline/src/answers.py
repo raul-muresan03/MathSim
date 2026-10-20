@@ -1,11 +1,11 @@
+from multiprocessing import Pool
 import cv2
 import pytesseract
 import re
 import json
 import logging
-from pathlib import Path
 import numpy as np
-from .configs.config import *
+from config import OCR_REPLACEMENTS, ANSWERS_PAGE_RANGES, PAGES_DIR, ANSWER_BBOXES, PROCESSED_DIR, ANSWERS_PAGES
 
 logger = logging.getLogger(__name__)
 
