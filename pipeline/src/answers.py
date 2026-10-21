@@ -3,11 +3,8 @@ import cv2
 import pytesseract
 import re
 import json
-import logging
 import numpy as np
 from config import OCR_REPLACEMENTS, ANSWERS_PAGE_RANGES, PAGES_DIR, ANSWER_BBOXES, PROCESSED_DIR, ANSWERS_PAGES
-
-logger = logging.getLogger(__name__)
 
 def extract_answer_bboxes_from_page(image_path, out_path, page_num):
     out_path.mkdir(parents=True, exist_ok=True)
@@ -37,7 +34,6 @@ def extract_answer_bboxes_from_page(image_path, out_path, page_num):
 def bbox2json(image_path):
     ROI = cv2.imread(str(image_path))
     if ROI is None:
-        logger.warning("Failed to read image: %s", image_path)
         return {}
 
     ROI = cv2.copyMakeBorder(ROI, 30, 30, 30, 30, cv2.BORDER_CONSTANT, value=[255, 255, 255])

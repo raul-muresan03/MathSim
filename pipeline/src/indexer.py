@@ -2,16 +2,9 @@ import cv2
 import pytesseract
 import re
 import shutil
-import logging
 from pathlib import Path
 from collections import Counter
 from config import BINARY_THRESHOLD, MIN_CIRCLE_SIZE, MAX_CIRCLE_SIZE, ASPECT_RATIO_MIN, ASPECT_RATIO_MAX, MAX_CIRCLE_X, OCR_REPLACEMENTS, MATH_CHAPTERS, get_chapter_by_page
-
-LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
-LOG_DIR.mkdir(exist_ok=True)
-logger = logging.getLogger("indexer")
-logger.addHandler(logging.FileHandler(LOG_DIR / "errors.log"))
-logger.setLevel(logging.WARNING)
 
 
 def _page_num_from_path(image_path: str) -> str:
@@ -66,7 +59,6 @@ def extract_quiz_numbers_with_ocr(image_path):
             else:
                 extracted.append(None)
         except Exception:
-            logger.exception("OCR error: page=%s circle=%d image=%s", page, i, image_path)
             extracted.append(None)
 
     return extracted
