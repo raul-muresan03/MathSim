@@ -3,13 +3,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import bcrypt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
-from sqlalchemy.orm import Session
-
 from database import get_db
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from models import User
+from sqlalchemy.orm import Session
 
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 if len(SECRET_KEY) < 32:

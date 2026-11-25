@@ -3,9 +3,7 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from routers import auth, simulation, admin
-
+from routers import admin, auth, simulation
 
 app = FastAPI(
     title="MathSim API",

@@ -3,34 +3,26 @@ import random
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List
-
-from sqlalchemy.orm import Session
 
 from models import SessionData
+from sqlalchemy.orm import Session
 
-ROOT_DIR = Path(__file__).parent.parent
+ROOT_DIR: Path = Path(__file__).parent.parent
 INVENTORY_PATH = ROOT_DIR / "data" / "inventory.json"
 SESSION_TTL = timedelta(hours=24)
 
-
-def _load_inventory() -> List[dict]:
+def _load_inventory() -> list[dict]:
     if not INVENTORY_PATH.exists():
         return []
     with open(INVENTORY_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-
-def _scan_inventory() -> list:
-    return _load_inventory()
-
-
-def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: Dict[str, float]) -> dict:
-    inventory = _scan_inventory()
+def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: dict[str, float]) -> dict:
+    inventory = _load_inventory()
     if not inventory:
         raise ValueError("No quiz data found on disk.")
 
-    by_chapter: Dict[str, list] = {}
+    by_chapter: dict[str, list] = {}
     for item in inventory:
         if not item["has_all_answers"]:
             continue
@@ -96,7 +88,6 @@ def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: 
         "total_grids": collected,
         "grids": grids,
     }
-
 
 def grade_session(db: Session, session_id: str, submitted_answers: list) -> dict:
     session_record = db.query(SessionData).filter(SessionData.session_id == session_id).first()

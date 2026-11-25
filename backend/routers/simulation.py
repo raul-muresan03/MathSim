@@ -1,16 +1,14 @@
 import json
 
+from database import get_db
+from dependencies import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
+from models import Simulation, User
+from schemas import SimulationConfig, SimulationResult
+from services.simulation import create_simulation_session, grade_session
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import User, Simulation
-from schemas import SimulationConfig, SimulationResult
-from dependencies import get_current_user
-from services.simulation import create_simulation_session, grade_session
-
 router = APIRouter(prefix="/api/simulation", tags=["simulation"])
-
 
 @router.post("/generate")
 async def generate_simulation(config: SimulationConfig, db: Session = Depends(get_db)):
