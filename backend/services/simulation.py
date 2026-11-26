@@ -17,11 +17,19 @@ def _load_inventory() -> list[dict]:
     with open(INVENTORY_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: dict[str, float]) -> dict:
-    inventory = _load_inventory()
-    if not inventory:
-        raise ValueError("No quiz data found on disk.")
+def _save_session(db: Session, selected: list[dict]) -> str:
+    session_id = f"sim_{secrets.token_hex(8)}"
+    while db.query(SessionData).filter(SessionData.session_id == session_id).first():
+        session_id = f"sim_{secrets.token_hex(8)}"
 
+    session_record = SessionData(session_id=session_id, data_json=json.dumps(selected))
+    db.query(SessionData).filter(SessionData.created_at < datetime.now() - SESSION_TTL).delete()
+    db.add(session_record)
+    db.commit()
+
+    return session_id
+
+def _select_grids(inventory: list[dict], total_quizzes: int, chapter_weights: dict[str, float]) -> tuple[list[dict], int]:
     by_chapter: dict[str, list] = {}
     for item in inventory:
         if not item["has_all_answers"]:
@@ -65,14 +73,15 @@ def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: 
         used_files.add(candidate["filename"])
         collected += len(candidate["ids"])
 
-    session_id = f"sim_{secrets.token_hex(8)}"
-    while db.query(SessionData).filter(SessionData.session_id == session_id).first():
-        session_id = f"sim_{secrets.token_hex(8)}"
+    return selected, collected
 
-    session_record = SessionData(session_id=session_id, data_json=json.dumps(selected))
-    db.query(SessionData).filter(SessionData.created_at < datetime.now() - SESSION_TTL).delete()
-    db.add(session_record)
-    db.commit()
+def create_simulation_session(db: Session, total_quizzes: int, chapter_weights: dict[str, float]) -> dict:
+    inventory = _load_inventory()
+    if not inventory:
+        raise ValueError("No quiz data found on disk.")
+
+    selected, collected = _select_grids(inventory, total_quizzes, chapter_weights)
+    session_id = _save_session(db, selected)
 
     grids = []
     for item in selected:

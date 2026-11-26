@@ -132,7 +132,7 @@ class TestCreateSession:
             "answers": {"1": "A"}, "has_all_answers": True,
         }]
 
-        with patch.object(sim_module, "datetime") as clock, patch.object(sim_module, "_scan_inventory", return_value=inventory):
+        with patch.object(sim_module, "datetime") as clock, patch.object(sim_module, "_load_inventory", return_value=inventory):
             clock.now.return_value = now
             result = sim_module.create_simulation_session(db, 1, {"algebra": 1.0})
 
